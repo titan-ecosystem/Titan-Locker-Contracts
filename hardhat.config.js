@@ -30,12 +30,17 @@ function mnemonic() {
 
 // Prefers a single raw private key (DEPLOYER_PRIVATE_KEY in .env, never
 // committed) over the mnemonic file, so either style of deploy account works.
+// Falls back to an empty account list (not an empty-string mnemonic, which
+// Hardhat treats as invalid and refuses to even initialize the network for)
+// so read-only commands - `hardhat verify`, scripts that only ever call view
+// functions - still work with no deploy key configured at all.
 function deployerAccounts() {
   if (process.env.DEPLOYER_PRIVATE_KEY) {
     const pk = process.env.DEPLOYER_PRIVATE_KEY.trim();
     return [pk.startsWith("0x") ? pk : `0x${pk}`];
   }
-  return { mnemonic: mnemonic() };
+  const seedPhrase = mnemonic();
+  return seedPhrase ? { mnemonic: seedPhrase } : [];
 }
 
 module.exports = {
@@ -128,8 +133,8 @@ module.exports = {
   etherscan: {
     apiKey: {
       base: process.env.ETHERSCAN_API_KEY_BASE || process.env.ETHERSCAN_API_KEY,
-      // Blockscout accepts any non-empty string here, it doesn't check it
-      robinhood: "no-api-key-needed",
+      // Blockscout accepts any non-empty string, but uses a real key if set
+      robinhood: process.env.BLOCKSCOUT_API_KEY || "no-api-key-needed",
     },
     customChains: [
       {

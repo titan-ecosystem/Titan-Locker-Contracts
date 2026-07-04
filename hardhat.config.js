@@ -99,9 +99,16 @@ module.exports = {
       accounts: deployerAccounts(),
     },
     robinhood: {
-      // no public RPC for this chain - set ROBINHOOD_RPC_URL in your local
+      // private QuickNode endpoint - set ROBINHOOD_RPC_URL in your local
       // .env (never commit the real URL, it carries a provider auth token)
       url: process.env.ROBINHOOD_RPC_URL || "",
+      chainId: 4663,
+      accounts: deployerAccounts(),
+    },
+    "robinhood-chain": {
+      // same chain (4663) as "robinhood" above, reached via Robinhood's own
+      // public RPC instead of a private QuickNode endpoint - no key needed
+      url: "https://rpc.mainnet.chain.robinhood.com",
       chainId: 4663,
       accounts: deployerAccounts(),
     },
@@ -135,6 +142,7 @@ module.exports = {
       base: process.env.ETHERSCAN_API_KEY_BASE || process.env.ETHERSCAN_API_KEY,
       // Blockscout accepts any non-empty string, but uses a real key if set
       robinhood: process.env.BLOCKSCOUT_API_KEY || "no-api-key-needed",
+      "robinhood-chain": process.env.BLOCKSCOUT_API_KEY || "no-api-key-needed",
     },
     customChains: [
       {
@@ -147,6 +155,14 @@ module.exports = {
       },
       {
         network: "robinhood",
+        chainId: 4663,
+        urls: {
+          apiURL: "https://robinhoodchain.blockscout.com/api",
+          browserURL: "https://robinhoodchain.blockscout.com",
+        },
+      },
+      {
+        network: "robinhood-chain",
         chainId: 4663,
         urls: {
           apiURL: "https://robinhoodchain.blockscout.com/api",

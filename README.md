@@ -46,6 +46,10 @@ MIT-licensed.
 Owner / fee receiver: `0x5C773302FBEED11fA59a6939f0354678738B02DB`. Current fee schedule:
 0.05 ETH flat, or 3% of the deposited token if paid in-kind (both owner-adjustable).
 
+Manually verified end-to-end on this live deployment (both fee paths, both
+sides of the unlock-time gate, real transactions) - see
+[TEST_REPORT.md](./TEST_REPORT.md) for the full writeup with linked tx hashes.
+
 ## Security
 
 Every contract in this repo has been run through a full stack of independent static

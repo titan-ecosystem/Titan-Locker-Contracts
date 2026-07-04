@@ -1,5 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Titan Locker - shared token/LP inspection helpers
+
+/**
+  ___________________    _   __   __    ____  ________ __ __________
+ /_  __/  _/_  __/   |  / | / /  / /   / __ \/ ____/ //_// ____/ __ \
+  / /  / /  / / / /| | /  |/ /  / /   / / / / /   / ,<  / __/ / /_/ /
+ / / _/ /  / / / ___ |/ /|  /  / /___/ /_/ / /___/ /| |/ /___/ _, _/
+/_/ /___/ /_/ /_/  |_/_/ |_/  /_____/\____/\____/_/ |_/_____/_/ |_|
+
+  Shared token/LP inspection helpers
+*/
 pragma solidity 0.8.30;
 
 import { IERC20Metadata as IERC20 } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";

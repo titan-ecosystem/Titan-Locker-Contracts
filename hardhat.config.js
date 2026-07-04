@@ -28,6 +28,16 @@ function mnemonic() {
   return "";
 }
 
+// Prefers a single raw private key (DEPLOYER_PRIVATE_KEY in .env, never
+// committed) over the mnemonic file, so either style of deploy account works.
+function deployerAccounts() {
+  if (process.env.DEPLOYER_PRIVATE_KEY) {
+    const pk = process.env.DEPLOYER_PRIVATE_KEY.trim();
+    return [pk.startsWith("0x") ? pk : `0x${pk}`];
+  }
+  return { mnemonic: mnemonic() };
+}
+
 module.exports = {
   defaultNetwork,
 
@@ -49,39 +59,46 @@ module.exports = {
     },
     eth: {
       url: "https://rpc.ankr.com/eth",
-      accounts: { mnemonic: mnemonic() },
+      accounts: deployerAccounts(),
     },
     bsc: {
       url: "https://bsc-dataseed.binance.org/",
-      accounts: { mnemonic: mnemonic() },
+      accounts: deployerAccounts(),
     },
     bsctest: {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
-      accounts: { mnemonic: mnemonic() },
+      accounts: deployerAccounts(),
     },
     polygon: {
       url: "https://polygon-rpc.com/",
-      accounts: { mnemonic: mnemonic() },
+      accounts: deployerAccounts(),
     },
     mumbai: {
       url: "https://rpc-mumbai.maticvigil.com/",
-      accounts: { mnemonic: mnemonic() },
+      accounts: deployerAccounts(),
     },
     arbitrum: {
       url: "https://arb1.arbitrum.io/rpc",
-      accounts: { mnemonic: mnemonic() },
+      accounts: deployerAccounts(),
     },
     base: {
       url: "https://developer-access-mainnet.base.org/",
-      accounts: { mnemonic: mnemonic() },
+      accounts: deployerAccounts(),
     },
     avax: {
       url: "https://api.avax.network/ext/bc/C/rpc",
-      accounts: { mnemonic: mnemonic() },
+      accounts: deployerAccounts(),
     },
     optimism: {
       url: "https://mainnet.optimism.io",
-      accounts: { mnemonic: mnemonic() },
+      accounts: deployerAccounts(),
+    },
+    robinhood: {
+      // no public RPC for this chain - set ROBINHOOD_RPC_URL in your local
+      // .env (never commit the real URL, it carries a provider auth token)
+      url: process.env.ROBINHOOD_RPC_URL || "",
+      chainId: 4663,
+      accounts: deployerAccounts(),
     },
   },
 
@@ -111,6 +128,8 @@ module.exports = {
   etherscan: {
     apiKey: {
       base: process.env.ETHERSCAN_API_KEY_BASE || process.env.ETHERSCAN_API_KEY,
+      // Blockscout accepts any non-empty string here, it doesn't check it
+      robinhood: "no-api-key-needed",
     },
     customChains: [
       {
@@ -119,6 +138,14 @@ module.exports = {
         urls: {
           apiURL: "https://api.basescan.org/api",
           browserURL: "https://basescan.org",
+        },
+      },
+      {
+        network: "robinhood",
+        chainId: 4663,
+        urls: {
+          apiURL: "https://robinhoodchain.blockscout.com/api",
+          browserURL: "https://robinhoodchain.blockscout.com",
         },
       },
     ],
@@ -156,13 +183,20 @@ task("generate", "Create a mnemonic for deploys", async () => {
 });
 
 task("account", "Prints the deployer account's address and balance across configured networks", async (_, { ethers, config }) => {
-  const hdkey = require("ethereumjs-wallet/hdkey");
-  const bip39 = require("bip39");
-  const localMnemonic = fs.readFileSync("./mnemonic.txt").toString().trim();
-  const seed = await bip39.mnemonicToSeed(localMnemonic);
-  const wallet = hdkey.fromMasterSeed(seed).derivePath("m/44'/60'/0'/0/0").getWallet();
-  const EthUtil = require("ethereumjs-util");
-  const address = "0x" + EthUtil.privateToAddress(wallet._privKey).toString("hex");
+  let address;
+
+  if (process.env.DEPLOYER_PRIVATE_KEY) {
+    const pk = process.env.DEPLOYER_PRIVATE_KEY.trim();
+    address = new ethers.Wallet(pk.startsWith("0x") ? pk : `0x${pk}`).address;
+  } else {
+    const hdkey = require("ethereumjs-wallet/hdkey");
+    const bip39 = require("bip39");
+    const localMnemonic = fs.readFileSync("./mnemonic.txt").toString().trim();
+    const seed = await bip39.mnemonicToSeed(localMnemonic);
+    const wallet = hdkey.fromMasterSeed(seed).derivePath("m/44'/60'/0'/0/0").getWallet();
+    const EthUtil = require("ethereumjs-util");
+    address = "0x" + EthUtil.privateToAddress(wallet._privKey).toString("hex");
+  }
   console.log("Deployer account:", address);
 
   for (const name in config.networks) {

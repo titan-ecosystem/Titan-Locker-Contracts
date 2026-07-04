@@ -1,5 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Titan Locker - individual token lock
+
+/**
+  ___________________    _   __   __    ____  ________ __ __________
+ /_  __/  _/_  __/   |  / | / /  / /   / __ \/ ____/ //_// ____/ __ \
+  / /  / /  / / / /| | /  |/ /  / /   / / / / /   / ,<  / __/ / /_/ /
+ / / _/ /  / / / ___ |/ /|  /  / /___/ /_/ / /___/ /| |/ /___/ _, _/
+/_/ /___/ /_/ /_/  |_/_/ |_/  /_____/\____/\____/_/ |_/_____/_/ |_|
+
+  Individual token lock
+*/
 pragma solidity 0.8.30;
 
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";

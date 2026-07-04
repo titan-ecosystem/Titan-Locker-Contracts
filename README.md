@@ -34,6 +34,18 @@ MIT-licensed.
 - **`test/TestERC20.sol`**, **`test/MockUniswapV2Pair.sol`** - test-only mocks, not part
   of the locker product itself
 
+## Deployments
+
+**Robinhood Chain** (chain ID `4663`)
+
+| Contract | Address |
+|---|---|
+| `Util` | [`0x772279251b563028a32cD1505e3F2f8485C746D9`](https://robinhoodchain.blockscout.com/address/0x772279251b563028a32cD1505e3F2f8485C746D9) |
+| `TitanLockerManagerV1` | [`0x713E56CeE7060F01F710bF26Aff988264dcfb311`](https://robinhoodchain.blockscout.com/address/0x713E56CeE7060F01F710bF26Aff988264dcfb311) |
+
+Owner / fee receiver: `0x5C773302FBEED11fA59a6939f0354678738B02DB`. Default fee schedule:
+0.2 ETH flat, or 5% of the deposited token if paid in-kind (both owner-adjustable).
+
 ## Security
 
 Every contract in this repo has been run through a full stack of independent static

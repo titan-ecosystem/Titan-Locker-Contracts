@@ -1,0 +1,70 @@
+[profile.default]
+src = "contracts"
+test = "test/foundry"
+out = "out"
+libs = ["lib", "node_modules"]
+cache_path = "cache-forge"
+solc_version = "0.8.30"
+evm_version = "london"
+optimizer = true
+optimizer_runs = 200
+fs_permissions = [{ access = "read", path = "./" }]
+
+# not part of this Foundry setup: a separate Echidna fuzzing harness lives
+# under contracts/echidna and is out of scope for this hybrid Hardhat+Foundry
+# task, so it's excluded from forge's own compilation.
+skip = ["contracts/echidna-tests/**"]
+
+remappings = [
+  "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+  "forge-std/=lib/forge-std/src/",
+]
+
+[profile.default.invariant]
+runs = 256
+depth = 100
+fail_on_revert = false
+
+# Separate profile used only for Halmos symbolic tests (test/halmos/**), kept
+# out of profile.default so `forge test`/`forge coverage` etc. never touch it
+# and the existing test/foundry suite's discovery/behavior is unaffected.
+#
+# Invoke with:
+#   FOUNDRY_PROFILE=halmos halmos --forge-build-out out-halmos
+#
+# Both flags matter:
+#  - FOUNDRY_PROFILE=halmos makes `forge build` (which halmos shells out to)
+#    use this profile's src/test/out paths.
+#  - --forge-build-out out-halmos is *also* required: halmos's own artifact
+#    loader defaults to reading from "out" regardless of FOUNDRY_PROFILE, so
+#    without this flag it silently loads stale/irrelevant artifacts from
+#    profile.default's "out" dir (or reports "No tests" if that dir doesn't
+#    have a matching contract name).
+#
+# Uses its own `out-halmos` build directory (rather than sharing `out`) since,
+# before this was split out, an unscoped `halmos` run picked up the unrelated,
+# already-built TitanLockerInvariantTest (invariant_* functions, stateful
+# Handler-driven fuzzing) left over in the shared `out` dir from a prior
+# `forge test` - that contract is not meant for symbolic execution and made
+# the run balloon to multiple minutes before the solver gave up. A dedicated
+# out dir keeps Halmos's view limited to exactly what's under test/halmos.
+[profile.halmos]
+src = "contracts"
+test = "test/halmos"
+out = "out-halmos"
+libs = ["lib", "node_modules"]
+cache_path = "cache-forge-halmos"
+solc_version = "0.8.30"
+evm_version = "london"
+optimizer = true
+optimizer_runs = 200
+fs_permissions = [{ access = "read", path = "./" }]
+skip = ["contracts/echidna-tests/**"]
+
+remappings = [
+  "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/",
+  "forge-std/=lib/forge-std/src/",
+]
+
+[fmt]
+line_length = 120

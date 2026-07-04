@@ -1,0 +1,21 @@
+# Echidna config for the TitanLockerManagerV1 / TitanLockerV1 fuzz harness
+# under contracts/echidna-tests/EchidnaLockerTest.sol.
+testMode: assertion
+testLimit: 10000
+seqLen: 100
+# NOTE: `balanceContract` (seed ETH balance for the deployed test contract)
+# is deliberately NOT set here: in this Echidna 2.3.2 build, setting
+# `balanceContract` to *any* nonzero value (even a few wei) makes the very
+# first contract deployment fail outright ("Deploying the contract ...
+# failed (revert, out-of-gas, ...)"), reproduced even for a trivial
+# `contract Probe { constructor(){x=1;} }` with no other config keys set.
+# `balanceAddr` (ETH given to the fuzzing sender accounts) is unaffected and
+# is kept below. Practically this means the harness contract itself starts
+# with 0 ETH, so the ETH-fee-paying branch of `createLock` (see
+# EchidnaLockerTest.sol) never actually executes - it guards on
+# `address(this).balance < ethToSend` and returns early. The token-fee-bps
+# branch (the one the task cares most about - the fee-math invariant) is
+# unaffected and is exercised on every call.
+balanceAddr: 100000000000000000000
+coverage: true
+corpusDir: echidna-corpus

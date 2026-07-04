@@ -1,0 +1,43 @@
+node_modules
+artifacts
+cache
+coverage
+coverage.json
+*.tsbuildinfo
+
+# only the ephemeral local-network deployment records are noise; deployment
+# records for real networks (bsc, eth, etc.) should be committed as the
+# permanent record of what's actually deployed where
+deployments/localhost
+deployments/hardhat
+
+# Foundry
+out
+cache-forge
+
+# Foundry (halmos profile - separate build dir, see foundry.toml)
+out-halmos
+cache-forge-halmos
+
+mnemonic.txt
+*_produces*.txt
+.env
+.env.*
+!.env.example
+
+# private key / wallet material - defense in depth beyond mnemonic.txt above
+*.pem
+*.key
+*.keystore
+keystore/
+wallet.json
+secrets.json
+credentials.json
+
+# Echidna's generated fuzzing corpus - not sensitive, just noise
+echidna-corpus/
+
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

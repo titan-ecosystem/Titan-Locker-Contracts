@@ -6,6 +6,8 @@ module.exports = {
     'library/Dex.sol',
     'test/TestERC20.sol',
     'test/MockUniswapV2Pair.sol',
+    'test/MockNonfungiblePositionManagerV3.sol',
+    'test/MockPositionManagerV4.sol',
     'echidna-tests',
   ],
   configureYulOptimizer: true,

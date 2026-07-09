@@ -86,6 +86,49 @@ describe("TitanLockerV2.sol", () => {
     });
   });
 
+  describe("stray-NFT rescue", () => {
+    let mockV3, strayNfts, locker;
+
+    before(async () => {
+      const ERC20 = await ethers.getContractFactory("TestERC20");
+      const t0 = await ERC20.deploy("R0", "R0", 1000000);
+      const t1 = await ERC20.deploy("R1", "R1", 1000000);
+
+      // the locked position lives on mockV3
+      const MockV3 = await ethers.getContractFactory("MockNonfungiblePositionManagerV3");
+      mockV3 = await MockV3.deploy();
+      await manager.setPositionManager(mockV3.address, KIND.UNIV3, true);
+      await mockV3.mint(deployer.address, t0.address, t1.address, 0, 0); // tokenId 0 (will be locked)
+      await mockV3.setApprovalForAll(manager.address, true);
+
+      const ethFee = await manager.ethFee();
+      await manager.createPositionLock(mockV3.address, 0, await futureUnlock(), { value: ethFee });
+      const id = Number(await manager.tokenLockerCount()) - 1;
+      locker = await ethers.getContractAt("TitanLockerV2", await manager.getTokenLockAddress(id));
+
+      // a DIFFERENT NFT collection, one token of which gets sent to the lock by mistake
+      strayNfts = await MockV3.deploy();
+      await strayNfts.mint(deployer.address, t0.address, t1.address, 0, 0); // stray tokenId 0
+      await strayNfts["safeTransferFrom(address,address,uint256)"](deployer.address, locker.address, 0);
+    });
+
+    it("Should rescue a stray NFT to the owner", async () => {
+      expect(await strayNfts.ownerOf(0)).to.equal(locker.address);
+      await locker.withdrawNft(strayNfts.address, 0);
+      expect(await strayNfts.ownerOf(0)).to.equal(deployer.address);
+    });
+
+    it("Should refuse to sweep the locked position NFT via withdrawNft", async () => {
+      await expect(locker.withdrawNft(mockV3.address, 0)).to.be.reverted;
+      // the locked NFT is still held by the lock
+      expect(await mockV3.ownerOf(0)).to.equal(locker.address);
+    });
+
+    it("Should reject a non-owner rescuing an NFT", async () => {
+      await expect(locker.connect(other).withdrawNft(strayNfts.address, 0)).to.be.reverted;
+    });
+  });
+
   describe("kind guards on position locks", () => {
     let mockV3, locker;
 

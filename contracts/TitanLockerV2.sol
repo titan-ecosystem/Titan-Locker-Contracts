@@ -46,6 +46,7 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   event TokensWithdrawn();
   event PositionWithdrawn(uint256 tokenId);
   event FeesCollected(uint256 amount0, uint256 amount1);
+  event StrayNftRescued(address indexed collection, uint256 tokenId);
 
   ITitanLockerManagerV2.LockKind private immutable _kind;
   ITitanLockerManagerV2 private immutable _manager;
@@ -244,6 +245,19 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
 
     IERC20 stray = IERC20(tokenAddress_);
     stray.safeTransfer(_owner(), stray.balanceOf(address(this)));
+  }
+
+  /// @dev Rescue an ERC721 that landed on this contract by mistake. The locked
+  /// position NFT itself can never be moved this way - it is only releasable via
+  /// `withdraw()` after `unlockTime` - so this only ever frees genuinely stray
+  /// NFTs (the contract accepts any NFT via ERC721Holder, so without this they
+  /// would be stuck forever).
+  function withdrawNft(address collection_, uint256 tokenId_) external onlyOwner nonReentrant {
+    if (_kind != ITitanLockerManagerV2.LockKind.ERC20 && collection_ == _asset && tokenId_ == _tokenId) {
+      revert CannotSweepLockedToken();
+    }
+    IERC721(collection_).safeTransferFrom(address(this), _owner(), tokenId_);
+    emit StrayNftRescued(collection_, tokenId_);
   }
 
   /// @dev Rescue any ETH that landed on this contract (e.g. from a dividend token).

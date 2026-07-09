@@ -40,6 +40,7 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   error CannotSweepLockedToken();
   error EthTransferFailed();
   error WrongLockKind();
+  error InvalidVestingSchedule();
 
   event UnlockTimeExtended(uint40 newUnlockTime);
   event TokensDeposited(uint256 amountReceived);
@@ -47,6 +48,7 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   event PositionWithdrawn(uint256 tokenId);
   event FeesCollected(uint256 amount0, uint256 amount1);
   event StrayNftRescued(address indexed collection, uint256 tokenId);
+  event TokensReleased(uint256 amount);
 
   ITitanLockerManagerV2.LockKind private immutable _kind;
   ITitanLockerManagerV2 private immutable _manager;
@@ -58,8 +60,17 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   address private immutable _createdBy;
   uint40 private immutable _id;
   uint40 private immutable _createdAt;
-  /// @dev Only meaningful for ERC20 locks - true if the token is a V2 LP pair.
+  /// @dev Only meaningful for ERC20/vesting locks - true if the token is a V2 LP pair.
   bool private immutable _isLpToken;
+
+  /// @dev Vesting schedule (ERC20_VESTING kind only; all zero otherwise).
+  /// `_vestTotal` is the nominal granted amount; `_released` is the running
+  /// total already sent to the owner.
+  uint40 private immutable _vestStart;
+  uint40 private immutable _vestCliff;
+  uint40 private immutable _vestEnd;
+  uint256 private immutable _vestTotal;
+  uint256 private _released;
 
   uint40 private _unlockTime;
 
@@ -70,10 +81,25 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
     ITitanLockerManagerV2.LockKind kind_,
     address asset_,
     uint256 tokenId_,
-    uint40 unlockTime_
+    uint40 unlockTime_,
+    uint40 vestStart_,
+    uint40 vestCliff_,
+    uint40 vestEnd_,
+    uint256 vestTotal_
   ) Ownable(owner_) {
     if (owner_ == address(0)) revert ZeroAddress();
     if (unlockTime_ <= uint40(block.timestamp)) revert UnlockTimeNotInFuture();
+
+    bool isVesting = kind_ == ITitanLockerManagerV2.LockKind.ERC20_VESTING;
+    bool isFungible = isVesting || kind_ == ITitanLockerManagerV2.LockKind.ERC20;
+
+    if (isVesting) {
+      // start < end, and start <= cliff <= end. (unlockTime_ is set to end by
+      // the manager, so the future-time check above already covers end.)
+      if (vestStart_ >= vestEnd_ || vestCliff_ < vestStart_ || vestCliff_ > vestEnd_) {
+        revert InvalidVestingSchedule();
+      }
+    }
 
     _manager = ITitanLockerManagerV2(manager_);
     _id = id_;
@@ -83,7 +109,12 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
     _createdBy = owner_;
     _createdAt = uint40(block.timestamp);
     _unlockTime = unlockTime_;
-    _isLpToken = kind_ == ITitanLockerManagerV2.LockKind.ERC20 && Util.isLpToken(asset_);
+    _isLpToken = isFungible && Util.isLpToken(asset_);
+
+    _vestStart = vestStart_;
+    _vestCliff = vestCliff_;
+    _vestEnd = vestEnd_;
+    _vestTotal = vestTotal_;
   }
 
   modifier onlyErc20() {
@@ -92,14 +123,27 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   }
 
   modifier onlyPosition() {
-    if (_kind == ITitanLockerManagerV2.LockKind.ERC20) revert WrongLockKind();
+    if (
+      _kind != ITitanLockerManagerV2.LockKind.UNIV3 &&
+      _kind != ITitanLockerManagerV2.LockKind.UNIV4
+    ) revert WrongLockKind();
     _;
+  }
+
+  modifier onlyVesting() {
+    if (_kind != ITitanLockerManagerV2.LockKind.ERC20_VESTING) revert WrongLockKind();
+    _;
+  }
+
+  function _isFungible() private view returns (bool) {
+    return _kind == ITitanLockerManagerV2.LockKind.ERC20
+      || _kind == ITitanLockerManagerV2.LockKind.ERC20_VESTING;
   }
 
   // --- reads ---
 
   function _heldBalance() private view returns (uint256) {
-    if (_kind != ITitanLockerManagerV2.LockKind.ERC20) return 0;
+    if (!_isFungible()) return 0;
     return IERC20(_asset).balanceOf(address(this));
   }
 
@@ -135,7 +179,7 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   /// V2 LP: the pair's `token0`/`token1`. V3/V4: the position's two tokens.
   /// Plain ERC20 or on any read failure: both zero with `hasData == false`.
   function getUnderlyingTokens() public view returns (bool hasData, address token0, address token1) {
-    if (_kind == ITitanLockerManagerV2.LockKind.ERC20) {
+    if (_isFungible()) {
       if (!_isLpToken) return (false, address(0), address(0));
       try Util.getLpData(_asset) returns (address t0, address t1, uint256, uint256, uint256, uint256) {
         return (true, t0, t1);
@@ -164,8 +208,10 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
 
   // --- unlock-time management (all kinds) ---
 
-  /// @dev Push `unlockTime` further out. Never allowed to reduce it.
+  /// @dev Push `unlockTime` further out. Never allowed to reduce it. Not
+  /// available for vesting locks - their schedule is fixed at creation.
   function extendLock(uint40 newUnlockTime_) public onlyOwner {
+    if (_kind == ITitanLockerManagerV2.LockKind.ERC20_VESTING) revert WrongLockKind();
     if (newUnlockTime_ < _unlockTime || newUnlockTime_ < uint40(block.timestamp)) {
       revert UnlockTimeCannotBeReduced();
     }
@@ -220,10 +266,55 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
     emit FeesCollected(amount0, amount1);
   }
 
+  // --- vesting release ---
+
+  /// @notice Amount vested by `timestamp` under the linear schedule: nothing
+  /// before the cliff, then `total * (t - start) / (end - start)`, capped at
+  /// `total` from `end` onward.
+  function _vestedAt(uint40 timestamp_) private view returns (uint256) {
+    if (timestamp_ < _vestCliff) return 0;
+    if (timestamp_ >= _vestEnd) return _vestTotal;
+    return (_vestTotal * (timestamp_ - _vestStart)) / (_vestEnd - _vestStart);
+  }
+
+  /// @notice Total granted amount that has vested as of now.
+  function vestedAmount() public view returns (uint256) {
+    return _vestedAt(uint40(block.timestamp));
+  }
+
+  /// @notice Amount already released to the owner.
+  function releasedAmount() external view returns (uint256) {
+    return _released;
+  }
+
+  /// @notice Amount claimable right now: the vested-but-unreleased amount,
+  /// never more than the tokens actually held (fee-on-transfer safe).
+  function releasable() public view returns (uint256) {
+    uint256 ideal = vestedAmount() - _released;
+    uint256 held = _isFungible() ? IERC20(_asset).balanceOf(address(this)) : 0;
+    return ideal < held ? ideal : held;
+  }
+
+  /// @notice The vesting schedule and nominal grant (vesting locks only).
+  function getVesting() external view returns (uint40 start, uint40 cliff, uint40 end, uint256 total, uint256 released) {
+    return (_vestStart, _vestCliff, _vestEnd, _vestTotal, _released);
+  }
+
+  /// @notice Release the currently-claimable vested tokens to the owner.
+  /// Effects (bump `_released`) precede the transfer - checks-effects-interactions.
+  function release() external onlyOwner onlyVesting nonReentrant returns (uint256 amount) {
+    amount = releasable();
+    _released += amount;
+    IERC20(_asset).safeTransfer(_owner(), amount);
+    emit TokensReleased(amount);
+  }
+
   // --- withdrawal (after unlock) ---
 
   /// @dev Return the locked asset to the owner once the lock has matured.
+  /// Vesting locks release via `release()` instead, so they are rejected here.
   function withdraw() external onlyOwner nonReentrant {
+    if (_kind == ITitanLockerManagerV2.LockKind.ERC20_VESTING) revert WrongLockKind();
     if (uint40(block.timestamp) < _unlockTime) revert LockStillActive(_unlockTime);
 
     if (_kind == ITitanLockerManagerV2.LockKind.ERC20) {
@@ -241,7 +332,7 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   /// airdrop or dividend). For NFT locks nothing is excluded - the locked asset
   /// is an NFT, not an ERC20, so this can never move it.
   function withdrawToken(address tokenAddress_) external onlyOwner nonReentrant {
-    if (_kind == ITitanLockerManagerV2.LockKind.ERC20 && tokenAddress_ == _asset) revert CannotSweepLockedToken();
+    if (_isFungible() && tokenAddress_ == _asset) revert CannotSweepLockedToken();
 
     IERC20 stray = IERC20(tokenAddress_);
     stray.safeTransfer(_owner(), stray.balanceOf(address(this)));

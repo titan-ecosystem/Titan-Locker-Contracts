@@ -12,9 +12,12 @@
 pragma solidity 0.8.30;
 
 interface ITitanLockerManagerV2 {
-  /// @notice What a lock holds. ERC20 covers plain tokens and V2-style LP
-  /// tokens (which are themselves ERC20). UNIV3/UNIV4 are ERC721 LP positions.
-  enum LockKind { ERC20, UNIV3, UNIV4 }
+  /// @notice What a lock holds and how it releases. ERC20 covers plain tokens
+  /// and V2-style LP tokens (which are themselves ERC20), released 100% at
+  /// `unlockTime`. UNIV3/UNIV4 are ERC721 LP positions. ERC20_VESTING is a
+  /// fungible grant released linearly (with an optional cliff) between `start`
+  /// and `end`. Appended in order, so existing values keep their numbers.
+  enum LockKind { ERC20, UNIV3, UNIV4, ERC20_VESTING }
 
   event TokenLockerCreated(
     uint40 id,
@@ -37,6 +40,18 @@ interface ITitanLockerManagerV2 {
     uint40 unlockTime
   );
 
+  event VestingLockerCreated(
+    uint40 id,
+    address indexed token,
+    address indexed token0,
+    address indexed token1,
+    address createdBy,
+    uint256 amount,
+    uint40 start,
+    uint40 cliff,
+    uint40 end
+  );
+
   event FeeConfigUpdated(uint256 ethFee, uint16 tokenFeeBps, address indexed feeReceiver);
   event FeeCollected(uint40 indexed id, bool paidInEth, uint256 amount);
   event PositionManagerSet(address indexed positionManager, LockKind kind, bool allowed);
@@ -56,6 +71,19 @@ interface ITitanLockerManagerV2 {
     address tokenAddress_,
     uint256 amount_,
     uint40 unlockTime_
+  ) external payable;
+
+  /// @dev Vesting path. Locks `amount_` of a fungible token and releases it
+  /// linearly to the lock owner between `start_` and `end_`, with nothing
+  /// claimable before `cliff_`. Requires `start_ < end_` and
+  /// `start_ <= cliff_ <= end_`. Same creation-fee options as `createTokenLock`.
+  /// The grant is irrevocable - there is no creator clawback.
+  function createVestingLock(
+    address tokenAddress_,
+    uint256 amount_,
+    uint40 start_,
+    uint40 cliff_,
+    uint40 end_
   ) external payable;
 
   /// @dev Uniswap V3/V4 path. `positionManager_` must be allowlisted; its

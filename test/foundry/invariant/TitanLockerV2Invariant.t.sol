@@ -27,7 +27,7 @@ contract TitanLockerV2InvariantTest is StdInvariant, Test {
     manager.setPositionManager(address(handler.npm()), ITitanLockerManagerV2.LockKind.UNIV3, true);
     manager.transferOwnership(address(handler));
 
-    bytes4[] memory selectors = new bytes4[](9);
+    bytes4[] memory selectors = new bytes4[](11);
     selectors[0] = HandlerV2.createErc20Locker.selector;
     selectors[1] = HandlerV2.depositMore.selector;
     selectors[2] = HandlerV2.withdrawErc20.selector;
@@ -37,6 +37,8 @@ contract TitanLockerV2InvariantTest is StdInvariant, Test {
     selectors[6] = HandlerV2.withdrawPosition.selector;
     selectors[7] = HandlerV2.setTokenFeeBps.selector;
     selectors[8] = HandlerV2.setEthFee.selector;
+    selectors[9] = HandlerV2.createVestingLocker.selector;
+    selectors[10] = HandlerV2.releaseVesting.selector;
 
     targetSelector(FuzzSelector({ addr: address(handler), selectors: selectors }));
     targetContract(address(handler));
@@ -90,5 +92,15 @@ contract TitanLockerV2InvariantTest is StdInvariant, Test {
   /// @dev The token-fee cap can never be exceeded, whatever the call sequence.
   function invariant_tokenFeeBpsNeverExceedsCap() public view {
     assertLe(manager.tokenFeeBps(), 10000, "tokenFeeBps <= 100%");
+  }
+
+  /// @dev Vesting can never over-release: the cumulative amount released from a
+  /// vesting lock never exceeds the grant that was locked into it.
+  function invariant_vestingNeverOverReleases() public view {
+    uint256 n = handler.vestingLockerCount();
+    for (uint256 i = 0; i < n; i++) {
+      address l = handler.vestingLockers(i);
+      assertLe(handler.vestingReleased(l), handler.vestingGrant(l), "released <= grant");
+    }
   }
 }

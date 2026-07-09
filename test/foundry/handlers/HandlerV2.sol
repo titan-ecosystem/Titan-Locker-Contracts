@@ -39,6 +39,10 @@ contract HandlerV2 is Test {
   mapping(address => uint256) public collected0;
   mapping(address => uint256) public collected1;
 
+  address[] public vestingLockers;
+  mapping(address => uint256) public vestingGrant;
+  mapping(address => uint256) public vestingReleased;
+
   constructor(TitanLockerManagerV2 manager_) {
     manager = manager_;
     token = new TestERC20("Handler Token", "HTKN", 1_000_000_000);
@@ -62,6 +66,42 @@ contract HandlerV2 is Test {
 
   function positionLockerCount() external view returns (uint256) {
     return positionLockers.length;
+  }
+
+  function vestingLockerCount() external view returns (uint256) {
+    return vestingLockers.length;
+  }
+
+  // --- vesting locks ---
+
+  function createVestingLocker(uint256 amountSeed, uint256 windowSeed) external {
+    uint256 balance = token.balanceOf(address(this));
+    if (balance == 0) return;
+    uint256 amount = bound(amountSeed, 1, balance);
+    uint40 start = uint40(block.timestamp);
+    uint40 end = start + uint40(bound(windowSeed, 1, 365 days));
+
+    token.approve(address(manager), amount);
+    uint256 fee = manager.ethFee();
+    if (fee > address(this).balance) return;
+
+    try manager.createVestingLock{ value: fee }(address(token), amount, start, start, end) {
+      address l = manager.getTokenLockAddress(manager.tokenLockerCount() - 1);
+      vestingLockers.push(l);
+      vestingGrant[l] = token.balanceOf(l); // actual grant that landed in the lock
+    } catch {}
+  }
+
+  function releaseVesting(uint256 lockerSeed, uint256 warpSeed) external {
+    if (vestingLockers.length == 0) return;
+    address l = vestingLockers[bound(lockerSeed, 0, vestingLockers.length - 1)];
+    uint256 warp = bound(warpSeed, 0, 30 days);
+    if (warp > 0) vm.warp(block.timestamp + warp);
+
+    uint256 before = token.balanceOf(address(this));
+    try TitanLockerV2(payable(l)).release() {
+      vestingReleased[l] += token.balanceOf(address(this)) - before;
+    } catch {}
   }
 
   // --- ERC20 locks ---

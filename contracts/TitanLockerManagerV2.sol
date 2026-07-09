@@ -36,6 +36,7 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
   error EthTransferFailed();
   error PositionManagerNotAllowed(address positionManager);
   error InvalidPositionManagerKind();
+  error InvalidVestingSchedule();
 
   uint16 private constant BPS_DENOMINATOR = 10000;
 
@@ -112,7 +113,7 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
     uint256 amountToLock = _collectFee(id, tokenAddress_, amount_);
 
     TitanLockerV2 locker = new TitanLockerV2(
-      address(this), id, _msgSender(), LockKind.ERC20, tokenAddress_, 0, unlockTime_
+      address(this), id, _msgSender(), LockKind.ERC20, tokenAddress_, 0, unlockTime_, 0, 0, 0, 0
     );
     _tokenLockers[id] = locker;
 
@@ -162,6 +163,43 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
     }
   }
 
+  // --- vesting lock creation ---
+
+  /// @dev Locks a fungible token and releases it linearly (with an optional
+  /// cliff) to the lock owner between `start_` and `end_`. Same creation-fee
+  /// options as `createTokenLock`; the vesting grant is the post-fee amount and
+  /// is irrevocable.
+  function createVestingLock(
+    address tokenAddress_,
+    uint256 amount_,
+    uint40 start_,
+    uint40 cliff_,
+    uint40 end_
+  ) external payable override allowCreation nonReentrant {
+    if (start_ >= end_ || cliff_ < start_ || cliff_ > end_ || end_ <= uint40(block.timestamp)) {
+      revert InvalidVestingSchedule();
+    }
+
+    uint40 id = _tokenLockerCount++;
+    uint256 amountToLock = _collectFee(id, tokenAddress_, amount_);
+
+    // Grant is the nominal post-fee amount; `release()` clamps payouts to the
+    // lock's live balance, so fee-on-transfer shortfalls can never over-release.
+    TitanLockerV2 locker = new TitanLockerV2(
+      address(this), id, _msgSender(), LockKind.ERC20_VESTING, tokenAddress_, 0, end_, start_, cliff_, end_, amountToLock
+    );
+    _tokenLockers[id] = locker;
+
+    IERC20(tokenAddress_).safeTransferFrom(_msgSender(), address(locker), amountToLock);
+
+    _indexNewLocker(id, tokenAddress_, locker);
+
+    (, address token0, address token1) = locker.getUnderlyingTokens();
+    _indexUnderlying(id, token0, token1);
+
+    emit VestingLockerCreated(id, tokenAddress_, token0, token1, _msgSender(), amountToLock, start_, cliff_, end_);
+  }
+
   // --- V3/V4 position lock creation ---
 
   function createPositionLock(
@@ -176,7 +214,7 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
     _collectEthFee(id);
 
     TitanLockerV2 locker = new TitanLockerV2(
-      address(this), id, _msgSender(), kind, positionManager_, tokenId_, unlockTime_
+      address(this), id, _msgSender(), kind, positionManager_, tokenId_, unlockTime_, 0, 0, 0, 0
     );
     _tokenLockers[id] = locker;
 

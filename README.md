@@ -3,12 +3,12 @@
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.30-363636?logo=solidity)
 ![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-5.6.1-4E5EE4)
-![Tests](https://img.shields.io/badge/tests-81%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-90%20passing-brightgreen)
 ![Slither](https://img.shields.io/badge/slither-clean-brightgreen)
 ![Aderyn](https://img.shields.io/badge/aderyn-clean-brightgreen)
 ![Mythril](https://img.shields.io/badge/mythril-clean-brightgreen)
-![Foundry](https://img.shields.io/badge/foundry%20fuzz%2Finvariant-24%2F24%20passing-brightgreen)
-![Halmos](https://img.shields.io/badge/halmos-16%2F16%20proven-brightgreen)
+![Foundry](https://img.shields.io/badge/foundry%20fuzz%2Finvariant-28%2F28%20passing-brightgreen)
+![Halmos](https://img.shields.io/badge/halmos-18%2F18%20proven-brightgreen)
 ![npm audit](https://img.shields.io/badge/npm%20audit-0%20critical%2Fhigh-brightgreen)
 
 Smart contracts for Titan Locker, an open source EVM token locker. Free to use, modify,
@@ -44,9 +44,14 @@ There are two independent generations, deployed side by side (the frontend reads
   value-moving entry points, so per-lock custody is isolated by construction - one lock can
   never touch another lock's funds or fees. For V3/V4 locks, `collectFees()` sends the
   position's trading fees to the owner while it stays locked.
+- **Vesting** - `createVestingLock` locks a fungible token and releases it **linearly with an
+  optional cliff** to the lock owner via `release()`, between a `start` and `end`. It's
+  **irrevocable** (no creator clawback) and fee-on-transfer safe (payouts are clamped to the
+  lock's live balance). A cliff of `start` gives pure linear vesting.
 - **`TitanLockerManagerV2.sol`** - factory + registry for all lock kinds. `createTokenLock`
-  for ERC20/V2-LP, `createPositionLock` for V3/V4. Reuses V1's fee model (V3/V4 locks pay
-  the flat ETH fee only). V3/V4 position managers must be **owner-allowlisted**
+  for ERC20/V2-LP, `createVestingLock` for vesting, `createPositionLock` for V3/V4. Reuses
+  V1's fee model (V3/V4 locks pay the flat ETH fee only). V3/V4 position managers must be
+  **owner-allowlisted**
   (`setPositionManager`) before use - this is both the per-chain enablement mechanism and a
   kill-switch that keeps any un-validated integration disabled until verified.
 - **`ITitanLockerManagerV2.sol`**, **`interfaces/`** - the manager interface plus minimal
@@ -132,9 +137,9 @@ V2 was put through the same stack. Results:
 
 | Tool | Result |
 |---|---|
-| **Hardhat/Mocha** | **81 passing** total (51 V1 + 30 new V2: ERC20 parity, V3/V4 create→collect→withdraw, allowlist gating, cross-lock fee-claim isolation) |
-| **Foundry** fuzz + invariant | **24/24** total. New V2 suite adds 5 fuzz tests + 5 invariants, including `invariant_feeClaimIsolation` (fees ever collected from a lock never exceed that lock's own position's owed fees) and `invariant_managerHoldsNothing`, each exercised over 25,600 calls |
-| **Halmos** | **16/16 proven** total (8 new V2 properties: fee-math parity, allowlist owner-gating and kind validation, unlock-time gate, owner-only `withdraw`/`collectFees`) |
+| **Hardhat/Mocha** | **90 passing** total (V1 parity + V2: ERC20, V3/V4 create→collect→withdraw, allowlist gating, cross-lock fee-claim isolation, stray-NFT rescue, and vesting: cliff/linear release, schedule validation, kind guards) |
+| **Foundry** fuzz + invariant | **28/28** total. Adds `invariant_feeClaimIsolation`, `invariant_managerHoldsNothing`, and `invariant_vestingNeverOverReleases` (cumulative released ≤ the grant), plus vesting fuzz (vested is monotonic, bounded by total, and never over-releases) - each invariant exercised over 25,600 calls |
+| **Halmos** | **18/18 proven** total (V2 + vesting: fee-math parity, allowlist owner-gating/kind validation, unlock-time gate, owner-only `withdraw`/`collectFees`/`release`, and `vested ≤ total` over the time domain) |
 | **Mythril** | **0 findings** on both `TitanLockerManagerV2` and `TitanLockerV2` |
 | **Slither / Aderyn** | Only informational findings and the **same false-positive classes as V1** (caller-sourced `from`, an interface stub, an intentional zero-init counter, ETH sent only to the owner-set fee receiver / `onlyOwner`) - 0 unaddressed High/Medium |
 

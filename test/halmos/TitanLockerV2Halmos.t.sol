@@ -23,7 +23,7 @@ contract TitanLockerV2HalmosTest is Test {
 
   function _newErc20Locker(uint40 unlockTime) internal returns (TitanLockerV2) {
     return new TitanLockerV2(
-      DUMMY_MANAGER, 0, owner, ITitanLockerManagerV2.LockKind.ERC20, address(token), 0, unlockTime
+      DUMMY_MANAGER, 0, owner, ITitanLockerManagerV2.LockKind.ERC20, address(token), 0, unlockTime, 0, 0, 0, 0
     );
   }
 

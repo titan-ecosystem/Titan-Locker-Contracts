@@ -40,8 +40,8 @@ Manager: `TitanLockerManagerV2` at
 
 | Protocol | Kind | Position manager | Verification | Status |
 |---|---|---|---|---|
-| Uniswap **v3** | `UNIV3` | [`0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3`](https://robinhoodchain.blockscout.com/address/0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3) | `symbol() == "UNI-V3-POS"`, 47k+ positions minted (canonical; the look-alike clones have 0–2) | ⏳ pending owner tx |
-| Uniswap **v4** | `UNIV4` | [`0x58daec3116aae6d93017baaea7749052e8a04fa7`](https://robinhoodchain.blockscout.com/address/0x58daec3116aae6d93017baaea7749052e8a04fa7) | `poolManager() == 0x8366a39CC670B4001A1121B8F6A443A643e40951` (matches Uniswap's published v4 PoolManager) | ⏳ pending owner tx |
+| Uniswap **v3** | `UNIV3` | [`0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3`](https://robinhoodchain.blockscout.com/address/0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3) | `symbol() == "UNI-V3-POS"`, 47k+ positions minted (canonical; the look-alike clones have 0–2) | ✅ allowlisted ([tx](https://robinhoodchain.blockscout.com/tx/0xf6d51162aab0236332d2c517ce03d6414a7bed3085355696cff5a8db3afd5b69)) |
+| Uniswap **v4** | `UNIV4` | [`0x58daec3116aae6d93017baaea7749052e8a04fa7`](https://robinhoodchain.blockscout.com/address/0x58daec3116aae6d93017baaea7749052e8a04fa7) | `poolManager() == 0x8366a39CC670B4001A1121B8F6A443A643e40951` (matches Uniswap's published v4 PoolManager) | ✅ allowlisted ([tx](https://robinhoodchain.blockscout.com/tx/0x5a1d65ae1616023f5d647a5058afd7ad604ff6b73eea293d04c402668953f1a0)) |
 
 > Source of truth is always the on-chain state: read `positionManagerKind(pm)` on the
 > manager. This table is a human-readable mirror. When the owner sends the allowlist

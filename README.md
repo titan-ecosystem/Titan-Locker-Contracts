@@ -80,7 +80,8 @@ There are two independent generations, deployed side by side (the frontend reads
 |---|---|---|
 | `Util` | [`0x772279251b563028a32cD1505e3F2f8485C746D9`](https://robinhoodchain.blockscout.com/address/0x772279251b563028a32cD1505e3F2f8485C746D9) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x772279251b563028a32cD1505e3F2f8485C746D9?tab=contract) |
 | `TitanLockerManagerV1` | [`0x713E56CeE7060F01F710bF26Aff988264dcfb311`](https://robinhoodchain.blockscout.com/address/0x713E56CeE7060F01F710bF26Aff988264dcfb311) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x713E56CeE7060F01F710bF26Aff988264dcfb311?tab=contract) |
-| `TitanLockerManagerV2` | [`0x26b0654a0756dcd036d4e7215324f3d2be34d79e`](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e) | on-chain bytecode == artifact (19,299 bytes) |
+| `TitanLockerManagerV2` | [`0x26b0654a0756dcd036d4e7215324f3d2be34d79e`](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e?tab=contract) (bytecode == artifact, 19,299 bytes) |
+| `TitanLockerV2` (per-lock child) | verified template — e.g. [`0x0A1C…cd61`](https://robinhoodchain.blockscout.com/address/0x0A1CB1708c019A7C15285543e31996541024cd61?tab=contract) (token lock), [`0x2908…0ca1`](https://robinhoodchain.blockscout.com/address/0x2908D040c8f11d3F87f8E3FF2EAdC6e04a320ca1?tab=contract) (vesting lock) | ✅ verified source |
 
 Verified source reflects the code as it was at deploy time (predates the
 ASCII banner headers added afterward) - Solidity contracts are immutable, so

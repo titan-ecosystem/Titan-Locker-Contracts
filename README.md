@@ -1,4 +1,12 @@
+<!--
+title: Titan Locker Contracts — Token Locker, Liquidity Locker & Token Vesting (Uniswap V2/V3/V4 LP)
+description: Titan Locker is an open-source, immutable EVM smart-contract suite for locking ERC-20 tokens and Uniswap V2/V3/V4 LP, and for linear token vesting with a cliff. Deployed and live on Robinhood Chain (4663); non-upgradeable; extensively tested and audited.
+keywords: token locker, liquidity locker, LP locker, token vesting, linear vesting, cliff vesting, Uniswap V3 LP lock, Uniswap V4 LP lock, ERC-20 lock, Solidity, immutable smart contract, Robinhood Chain, EVM
+-->
+
 # Titan Locker Contracts
+
+**Titan Locker** is an open-source, **immutable (non-upgradeable)** EVM smart-contract suite for **locking tokens and liquidity** and for **linear token vesting with a cliff**. It locks ERC-20 tokens, Uniswap V2 LP tokens, and Uniswap **V3/V4 LP positions** (NFTs), and vests fungible tokens — all through one manager per generation, with each lock isolated in its own child contract. **Live on Robinhood Chain (chain ID 4663).**
 
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.30-363636?logo=solidity)
@@ -72,6 +80,7 @@ There are two independent generations, deployed side by side (the frontend reads
 |---|---|---|
 | `Util` | [`0x772279251b563028a32cD1505e3F2f8485C746D9`](https://robinhoodchain.blockscout.com/address/0x772279251b563028a32cD1505e3F2f8485C746D9) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x772279251b563028a32cD1505e3F2f8485C746D9?tab=contract) |
 | `TitanLockerManagerV1` | [`0x713E56CeE7060F01F710bF26Aff988264dcfb311`](https://robinhoodchain.blockscout.com/address/0x713E56CeE7060F01F710bF26Aff988264dcfb311) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x713E56CeE7060F01F710bF26Aff988264dcfb311?tab=contract) |
+| `TitanLockerManagerV2` | [`0x26b0654a0756dcd036d4e7215324f3d2be34d79e`](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e) | on-chain bytecode == artifact (19,299 bytes) |
 
 Verified source reflects the code as it was at deploy time (predates the
 ASCII banner headers added afterward) - Solidity contracts are immutable, so
@@ -87,12 +96,20 @@ Manually verified end-to-end on this live deployment (both fee paths, both
 sides of the unlock-time gate, real transactions) - see
 [TEST_REPORT.md](./TEST_REPORT.md) for the full writeup with linked tx hashes.
 
-**V2 is not deployed yet.** It ships as a fresh deploy alongside V1 (V1 keeps
-running; `setCreationEnabled(false)` can retire V1 creation at migration time).
-Deploy with `03_deploy_locker_v2.js`, then allowlist each chain's V3/V4 position
-managers with `scripts/setPositionManagers.js`. The V4 fee-collection path is
-unit-tested against a mock but must be fork-validated against the real V4
-`PositionManager` on a target chain before that manager is allowlisted in
+**Titan Locker V2 is deployed and live** at
+[`0x26b0654a0756dcd036d4e7215324f3d2be34d79e`](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e)
+(deploy tx [`0xe09a…0fecd`](https://robinhoodchain.blockscout.com/tx/0xe09a40e30f200a8fd89d9f8362f31ed418943dd14b128c1859bda4fd37e0fecd),
+block 5,851,744), as a fresh deploy alongside the unchanged V1. Its on-chain
+runtime bytecode is an **exact match to the compiled artifact** (19,299 bytes),
+and it was **verified end-to-end with real transactions** - ERC-20 locking (both
+fee paths), linear vesting create → partial release → full release, and
+post-unlock withdrawal. Full writeup with linked tx hashes:
+**[TEST_REPORT_V2.md](./TEST_REPORT_V2.md)**.
+
+Uniswap **V3/V4 LP** locking is not exercisable on Robinhood Chain (it has no
+Uniswap V3/V4). On chains that do, enable it by owner-allowlisting the position
+manager with `scripts/setPositionManagers.js`; the V4 fee-collection path should
+be fork-validated against the real `PositionManager` before allowlisting it in
 production - the allowlist keeps it disabled until then.
 
 ## Security
@@ -169,6 +186,29 @@ FOUNDRY_PROFILE=halmos halmos --forge-build-out out-halmos   # symbolic proofs
 Deploying V2: `03_deploy_locker_v2.js` deploys the V2 manager. After deploy, run
 `scripts/setPositionManagers.js` to allowlist the V3/V4 position managers for the
 target chain (it refuses any address with no contract code as a safety check).
+
+## FAQ
+
+**What is Titan Locker?**
+Titan Locker is an open-source (GPL-3.0), immutable EVM smart-contract suite for **locking tokens and liquidity** and for **linear token vesting**. It supports ERC-20 tokens, Uniswap V2 LP tokens, Uniswap V3/V4 LP positions (NFTs), and time-based vesting.
+
+**Is Titan Locker V2 deployed and live?**
+Yes — `TitanLockerManagerV2` is live on **Robinhood Chain (chain ID 4663)** at [`0x26b0654a0756dcd036d4e7215324f3d2be34d79e`](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e), verified end-to-end on-chain — see [TEST_REPORT_V2.md](./TEST_REPORT_V2.md).
+
+**Is Titan Locker upgradeable?**
+No. The contracts are **immutable / non-upgradeable** — plain constructors, no proxy, no `delegatecall`, no admin upgrade path. New versions are separate deployments; existing locks are never affected.
+
+**How does the vesting work?**
+Linear vesting: `vested = total × (now − start) / (end − start)`, with nothing released before the optional **cliff** and the full amount at/after `end`. Grants are **irrevocable**, release only to the lock owner, and can **never over-release** (payouts clamp to the live balance).
+
+**Can the contract owner seize locked funds or shorten a lock?**
+No. Each lock is an isolated child contract. The manager owner cannot move locked assets, cannot reduce an unlock time (extensions are increase-only), and cannot alter existing locks. Admin settings affect only new locks.
+
+**How is one lock isolated from another?**
+Every lock is its own contract holding exactly one asset, with owner-only value-moving functions. One lock can never touch another lock's balance or fees — proven by a Foundry invariant over 25,600 calls and confirmed by adversarial review.
+
+**Which networks are supported?**
+Any EVM chain. ERC-20 locking and vesting work everywhere; Uniswap V3/V4 LP locking is enabled per chain by owner-allowlisting that chain's canonical position manager.
 
 ## License
 

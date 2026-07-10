@@ -107,11 +107,17 @@ fee paths), linear vesting create → partial release → full release, and
 post-unlock withdrawal. Full writeup with linked tx hashes:
 **[TEST_REPORT_V2.md](./TEST_REPORT_V2.md)**.
 
-Uniswap **V3/V4 LP** locking is not exercisable on Robinhood Chain (it has no
-Uniswap V3/V4). On chains that do, enable it by owner-allowlisting the position
-manager with `scripts/setPositionManagers.js`; the V4 fee-collection path should
-be fork-validated against the real `PositionManager` before allowlisting it in
-production - the allowlist keeps it disabled until then.
+Uniswap **V3/V4 LP** locking is supported on Robinhood Chain — Uniswap v2/v3/v4 are
+live there. It's enabled by owner-allowlisting each chain's canonical position
+manager via `setPositionManager(pm, kind, true)` (or `scripts/setPositionManagers.js`);
+until that owner transaction is sent, `createPositionLock` reverts with
+`PositionManagerNotAllowed`. The trusted managers and the process for proposing
+additions (open a PR) are documented in **[ALLOWLIST.md](./ALLOWLIST.md)**. On
+Robinhood Chain (4663) the canonical managers are Uniswap v3
+`NonfungiblePositionManager` [`0x73991a25…DE0D3`](https://robinhoodchain.blockscout.com/address/0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3)
+and v4 `PositionManager` [`0x58daec31…04fa7`](https://robinhoodchain.blockscout.com/address/0x58daec3116aae6d93017baaea7749052e8a04fa7).
+The V4 fee-collection path should be fork-validated against the real `PositionManager`
+before allowlisting in production.
 
 ## Security
 

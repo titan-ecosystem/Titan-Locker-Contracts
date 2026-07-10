@@ -24,9 +24,17 @@ const POSITION_MANAGERS = {
     { address: "0xC36442b4a4522E871399CD717aBDD847Ab11FE88", kind: KIND.UNIV3, label: "Uniswap V3 NFPM" },
     // { address: "0x<verify>", kind: KIND.UNIV4, label: "Uniswap V4 PositionManager" },
   ],
+  // Robinhood Chain — Uniswap v2/v3/v4 are live here.
+  //  - v3 NonfungiblePositionManager: symbol()=="UNI-V3-POS", 47k+ positions
+  //    minted (canonical; look-alike clones have 0-2).
+  //  - v4 PositionManager: poolManager()==0x8366a39CC670B4001A1121B8F6A443A643e40951,
+  //    which matches Uniswap's published v4 PoolManager.
+  4663: [
+    { address: "0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3", kind: KIND.UNIV3, label: "Uniswap V3 NonfungiblePositionManager" },
+    { address: "0x58daec3116aae6d93017baaea7749052e8a04fa7", kind: KIND.UNIV4, label: "Uniswap V4 PositionManager" },
+  ],
   // Add arbitrum (42161), base (8453), optimism (10), polygon (137), bsc (56),
-  // etc. here after verifying each address. Robinhood Chain (4663) has no
-  // Uniswap deployment, so it stays empty.
+  // etc. here after verifying each address (see ALLOWLIST.md).
 };
 
 async function main() {

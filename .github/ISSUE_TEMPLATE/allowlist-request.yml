@@ -1,0 +1,58 @@
+name: "Allowlist request: add a position manager"
+description: Request that a Uniswap V3/V4-style position manager be added to the Titan Locker V2 allowlist.
+title: "[allowlist] <protocol> on <chain>"
+labels: ["allowlist"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this to request that a position manager be allowlisted so users can lock its
+        V3/V4 liquidity positions in Titan Locker V2. See
+        [ALLOWLIST.md](../blob/main/ALLOWLIST.md) for how the process works. Prefer a PR?
+        Use the *"Add a position manager to the allowlist"* PR template instead.
+  - type: input
+    id: protocol
+    attributes:
+      label: Protocol / AMM
+      placeholder: e.g. Uniswap v3
+    validations:
+      required: true
+  - type: input
+    id: chain
+    attributes:
+      label: Chain (name + id)
+      placeholder: e.g. Robinhood Chain (4663)
+    validations:
+      required: true
+  - type: input
+    id: pm
+    attributes:
+      label: Position manager address
+      placeholder: "0x..."
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: LockKind
+      options:
+        - UNIV3
+        - UNIV4
+    validations:
+      required: true
+  - type: textarea
+    id: proof
+    attributes:
+      label: Proof it's canonical
+      description: Official docs/deployments link, verified-source explorer link, and an on-chain check (symbol()/factory() for V3, poolManager() for V4).
+    validations:
+      required: true
+  - type: checkboxes
+    id: interface
+    attributes:
+      label: Interface
+      options:
+        - label: Exposes the Uniswap v3 (collect/positions) or v4 (modifyLiquidities/PositionManager) interface
+          required: true
+        - label: Contract source is verified on the chain's block explorer
+          required: true

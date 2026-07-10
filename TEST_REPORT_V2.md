@@ -65,8 +65,8 @@ After the ERC-20 lock's unlock time passed, `withdraw()` returned 100% of the pr
 |---|---|---|
 | `withdraw()` on the matured ERC-20 lock | [`0x8254…35b2`](https://robinhoodchain.blockscout.com/tx/0x82543d4917f196676409c30b02a00b78eec82ab25638d3ebb49d7a8cba4935b2) | lock balance → **0**, 1,000 TTV2 returned to owner |
 
-### Not tested live on this chain
-**Uniswap V3/V4 LP position locking and fee claiming** were not exercised here because **Robinhood Chain has no Uniswap V3/V4 deployment** to lock positions against. These paths are covered by the local test suite (Hardhat/Foundry/Halmos) against mock position managers and by the adversarial audit; on a chain with live Uniswap V3/V4 they are enabled by owner-allowlisting the position manager. See [README](./README.md).
+### Not yet exercised live on this chain
+**Uniswap V3/V4 LP position locking and fee claiming** were not part of this live run. Robinhood Chain **does** have Uniswap v2/v3/v4 deployed (Uniswap v3 `NonfungiblePositionManager` at `0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3`, v4 `PositionManager` at `0x58daec3116aae6d93017baaea7749052e8a04fa7`), so these paths can be enabled on-chain by the owner allowlisting those position managers via `setPositionManager(pm, kind, true)`. Until that owner transaction is sent, `createPositionLock` reverts with `PositionManagerNotAllowed`. The position-lock and fee-claim paths themselves are covered by the local test suite (Hardhat/Foundry/Halmos) against mock position managers and by the adversarial audit. See [README](./README.md).
 
 ---
 

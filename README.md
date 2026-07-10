@@ -8,6 +8,15 @@ keywords: token locker, liquidity locker, LP locker, token vesting, linear vesti
 
 **Titan Locker** is an open-source, **immutable (non-upgradeable)** EVM smart-contract suite for **locking tokens and liquidity** and for **linear token vesting with a cliff**. It locks ERC-20 tokens, Uniswap V2 LP tokens, and Uniswap **V3/V4 LP positions** (NFTs), and vests fungible tokens — all through one manager per generation, with each lock isolated in its own child contract. **Live on Robinhood Chain (chain ID 4663).**
 
+## Use it live
+
+Titan Locker is live and free to use on Robinhood Chain:
+
+- 🔒 **[Robinhood Chain Token & LP Locker](https://titandeployer.com/locker)** — lock ERC-20 or LP tokens, vest, and lock Uniswap V3/V4 positions.
+- 🏆 **[Best token locker on Robinhood Chain](https://titandeployer.com/docs/best-token-locker-on-robinhood-chain)** — why Titan Locker, answered.
+- ➕ **[Create a lock or vesting schedule](https://titandeployer.com/locker/create)**
+- 📚 **[Docs & FAQ](https://titandeployer.com/docs)** · 🌐 **[titandeployer.com](https://titandeployer.com)**
+
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.30-363636?logo=solidity)
 ![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-5.6.1-4E5EE4)

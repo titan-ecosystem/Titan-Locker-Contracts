@@ -36,7 +36,7 @@ describe("TitanLockerV2 vesting", () => {
   // create a 100%-ETH-fee-paid vesting lock so the grant equals `amount` exactly
   async function createVesting(amount, start, cliff, end) {
     const ethFee = await manager.ethFee();
-    await manager.createVestingLock(token.address, amount, start, cliff, end, { value: ethFee });
+    await manager.createVestingLock(token.address, amount, start, cliff, end, 10000, { value: ethFee });
     const id = Number(await manager.tokenLockerCount()) - 1;
     return ethers.getContractAt("TitanLockerV2", await manager.getTokenLockAddress(id));
   }
@@ -89,7 +89,7 @@ describe("TitanLockerV2 vesting", () => {
 
     // a plain ERC20 lock cannot be released
     const ethFee = await manager.ethFee();
-    await manager.createTokenLock(token.address, 1000, base + 2000, { value: ethFee });
+    await manager.createTokenLock(token.address, 1000, base + 2000, 10000, { value: ethFee });
     const id = Number(await manager.tokenLockerCount()) - 1;
     const plain = await ethers.getContractAt("TitanLockerV2", await manager.getTokenLockAddress(id));
     await expect(plain.release()).to.be.reverted;
@@ -100,15 +100,15 @@ describe("TitanLockerV2 vesting", () => {
     const ethFee = await manager.ethFee();
     // end <= now
     await expect(
-      manager.createVestingLock(token.address, 1000, base, base, base - 1, { value: ethFee })
+      manager.createVestingLock(token.address, 1000, base, base, base - 1, 10000, { value: ethFee })
     ).to.be.reverted;
     // start >= end
     await expect(
-      manager.createVestingLock(token.address, 1000, base + 1000, base + 1000, base + 1000, { value: ethFee })
+      manager.createVestingLock(token.address, 1000, base + 1000, base + 1000, base + 1000, 10000, { value: ethFee })
     ).to.be.reverted;
     // cliff out of [start, end]
     await expect(
-      manager.createVestingLock(token.address, 1000, base + 100, base + 5000, base + 1000, { value: ethFee })
+      manager.createVestingLock(token.address, 1000, base + 100, base + 5000, base + 1000, 10000, { value: ethFee })
     ).to.be.reverted;
   });
 

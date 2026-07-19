@@ -85,7 +85,7 @@ contract HandlerV2 is Test {
     uint256 fee = manager.ethFee();
     if (fee > address(this).balance) return;
 
-    try manager.createVestingLock{ value: fee }(address(token), amount, start, start, end) {
+    try manager.createVestingLock{ value: fee }(address(token), amount, start, start, end, 10000) {
       address l = manager.getTokenLockAddress(manager.tokenLockerCount() - 1);
       vestingLockers.push(l);
       vestingGrant[l] = token.balanceOf(l); // actual grant that landed in the lock
@@ -117,7 +117,7 @@ contract HandlerV2 is Test {
     uint256 valueToSend = payWithEth ? fee : 0;
     if (valueToSend > address(this).balance) valueToSend = 0;
 
-    try manager.createTokenLock{ value: valueToSend }(address(token), amount, unlockTime) {
+    try manager.createTokenLock{ value: valueToSend }(address(token), amount, unlockTime, 10000) {
       address l = manager.getTokenLockAddress(manager.tokenLockerCount() - 1);
       erc20Lockers.push(l);
       lockerNetLocked[l] = token.balanceOf(l);

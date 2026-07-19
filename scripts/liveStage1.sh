@@ -24,10 +24,14 @@ echo "chainTime=$TS  unlock/vestEnd=$WIN (300s window)" | tee -a "$LOG"
 echo "$TS" > /tmp/ts
 
 echo "== createTokenLock (ETH-fee path, locks 100% of 1000 TTV2) ==" | tee -a "$LOG"
-send --gas-limit 6000000 --value 10000000000000 "$M" "createTokenLock(address,uint256,uint40)" "$TOK" 1000000000000000000000 "$WIN" | p createTokenLock | tee -a "$LOG"
+# maxTokenFeeBps_ is ignored on the ETH-fee path (only checked when paying the
+# fee in-kind), so 10000 here just means "accept anything" - it's a no-op.
+send --gas-limit 6000000 --value 10000000000000 "$M" "createTokenLock(address,uint256,uint40,uint16)" "$TOK" 1000000000000000000000 "$WIN" 10000 | p createTokenLock | tee -a "$LOG"
 
 echo "== createVestingLock (token-fee path 5%, grants 950 TTV2, linear over 300s) ==" | tee -a "$LOG"
-send --gas-limit 6000000 "$M" "createVestingLock(address,uint256,uint40,uint40,uint40)" "$TOK" 1000000000000000000000 "$TS" "$TS" "$WIN" | p createVestingLock | tee -a "$LOG"
+# 500 = the caller's max acceptable fee (5%); reverts instead of silently
+# paying more if the live rate was bumped before this mines.
+send --gas-limit 6000000 "$M" "createVestingLock(address,uint256,uint40,uint40,uint40,uint16)" "$TOK" 1000000000000000000000 "$TS" "$TS" "$WIN" 500 | p createVestingLock | tee -a "$LOG"
 
 LOCK0=$(cast call --rpc-url "$RPC" "$M" "getTokenLockAddress(uint40)(address)" 0)
 LOCK1=$(cast call --rpc-url "$RPC" "$M" "getTokenLockAddress(uint40)(address)" 1)

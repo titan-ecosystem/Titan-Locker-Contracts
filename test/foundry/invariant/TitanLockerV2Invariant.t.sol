@@ -91,7 +91,7 @@ contract TitanLockerV2InvariantTest is StdInvariant, Test {
 
   /// @dev The token-fee cap can never be exceeded, whatever the call sequence.
   function invariant_tokenFeeBpsNeverExceedsCap() public view {
-    assertLe(manager.tokenFeeBps(), 10000, "tokenFeeBps <= 100%");
+    assertLe(manager.tokenFeeBps(), 500, "tokenFeeBps <= 5%");
   }
 
   /// @dev Vesting can never over-release: the cumulative amount released from a

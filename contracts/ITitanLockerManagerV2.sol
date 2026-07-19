@@ -66,24 +66,31 @@ interface ITitanLockerManagerV2 {
 
   /// @dev ERC20 (and V2-LP) path. Two ways to pay the creation fee: send
   /// `ethFee()` wei to lock 100% of `amount_`, or send 0 wei and have
-  /// `tokenFeeBps()` deducted from `amount_` in the locked token itself.
+  /// `tokenFeeBps()` deducted from `amount_` in the locked token itself - in
+  /// which case the call reverts if the live `tokenFeeBps()` exceeds
+  /// `maxTokenFeeBps_` (ignored on the ETH-fee path), protecting the caller
+  /// against a fee change landing between submission and mining. Pass
+  /// `type(uint16).max` to accept whatever the live rate is.
   function createTokenLock(
     address tokenAddress_,
     uint256 amount_,
-    uint40 unlockTime_
+    uint40 unlockTime_,
+    uint16 maxTokenFeeBps_
   ) external payable;
 
   /// @dev Vesting path. Locks `amount_` of a fungible token and releases it
   /// linearly to the lock owner between `start_` and `end_`, with nothing
   /// claimable before `cliff_`. Requires `start_ < end_` and
-  /// `start_ <= cliff_ <= end_`. Same creation-fee options as `createTokenLock`.
-  /// The grant is irrevocable - there is no creator clawback.
+  /// `start_ <= cliff_ <= end_`. Same creation-fee options (and the same
+  /// `maxTokenFeeBps_` protection) as `createTokenLock`. The grant is
+  /// irrevocable - there is no creator clawback.
   function createVestingLock(
     address tokenAddress_,
     uint256 amount_,
     uint40 start_,
     uint40 cliff_,
-    uint40 end_
+    uint40 end_,
+    uint16 maxTokenFeeBps_
   ) external payable;
 
   /// @dev Uniswap V3/V4 path. `positionManager_` must be allowlisted; its

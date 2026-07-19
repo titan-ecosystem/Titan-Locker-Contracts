@@ -43,19 +43,19 @@ describe("TitanLockerManagerV2.sol", () => {
   describe("ERC20 lock path (parity with V1)", () => {
     it("Should create a token lock and report kind ERC20", async () => {
       const unlockTime = await futureUnlock();
-      await manager.createTokenLock(erc20.address, 1, unlockTime);
+      await manager.createTokenLock(erc20.address, 1000, unlockTime, 10000);
 
       const data = await manager.getTokenLockData(0);
       expect(data.kind).to.equal(KIND.ERC20);
       expect(data.asset).to.equal(erc20.address);
       expect(data.tokenId).to.equal(0);
-      expect(data.balance).to.equal(1);
+      expect(data.balance).to.equal(950); // 1000 - 5%
     });
 
     it("Should deduct the in-kind token fee from a larger deposit", async () => {
       const unlockTime = await futureUnlock();
       const beforeReceiver = await erc20.balanceOf(feeReceiver.address);
-      await manager.createTokenLock(erc20.address, 10000, unlockTime);
+      await manager.createTokenLock(erc20.address, 10000, unlockTime, 10000);
 
       const id = Number(await manager.tokenLockerCount()) - 1;
       const data = await manager.getTokenLockData(id);
@@ -63,10 +63,30 @@ describe("TitanLockerManagerV2.sol", () => {
       expect((await erc20.balanceOf(feeReceiver.address)).sub(beforeReceiver)).to.equal(500);
     });
 
+    it("Should round the token fee up so dust amounts never lock for free", async () => {
+      const unlockTime = await futureUnlock();
+      const beforeReceiver = await erc20.balanceOf(feeReceiver.address);
+
+      // 19 units at the default 5% would round DOWN to a 0 fee pre-fix;
+      // ceiling division must charge exactly 1 unit instead.
+      await manager.createTokenLock(erc20.address, 19, unlockTime, 10000);
+      let id = Number(await manager.tokenLockerCount()) - 1;
+      expect((await manager.getTokenLockData(id)).balance).to.equal(18);
+      expect((await erc20.balanceOf(feeReceiver.address)).sub(beforeReceiver)).to.equal(1);
+
+      // 1 unit is small enough that "at least 1 unit of fee" consumes the
+      // entire deposit - the lock is created but holds nothing.
+      const beforeReceiver2 = await erc20.balanceOf(feeReceiver.address);
+      await manager.createTokenLock(erc20.address, 1, unlockTime, 10000);
+      id = Number(await manager.tokenLockerCount()) - 1;
+      expect((await manager.getTokenLockData(id)).balance).to.equal(0);
+      expect((await erc20.balanceOf(feeReceiver.address)).sub(beforeReceiver2)).to.equal(1);
+    });
+
     it("Should lock 100% when the flat ETH fee is paid", async () => {
       const unlockTime = await futureUnlock();
       const ethFee = await manager.ethFee();
-      await manager.createTokenLock(erc20.address, 10000, unlockTime, { value: ethFee });
+      await manager.createTokenLock(erc20.address, 10000, unlockTime, 10000, { value: ethFee });
       const id = Number(await manager.tokenLockerCount()) - 1;
       expect((await manager.getTokenLockData(id)).balance).to.equal(10000);
     });
@@ -81,7 +101,7 @@ describe("TitanLockerManagerV2.sol", () => {
       await tokenB.transfer(lpToken.address, 7000);
       await lpToken.approve(manager.address, ethers.constants.MaxUint256);
 
-      await manager.createTokenLock(lpToken.address, 1, await futureUnlock());
+      await manager.createTokenLock(lpToken.address, 1, await futureUnlock(), 10000);
       const id = Number(await manager.tokenLockerCount()) - 1;
 
       const idsA = await manager.getTokenLockersForAddress(tokenA.address);

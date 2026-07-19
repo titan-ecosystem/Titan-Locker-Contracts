@@ -34,7 +34,7 @@ describe("TitanLockerV2.sol", () => {
 
   async function newErc20Lock(amount = 1000) {
     const ethFee = await manager.ethFee();
-    await manager.createTokenLock(erc20.address, amount, await futureUnlock(), { value: ethFee });
+    await manager.createTokenLock(erc20.address, amount, await futureUnlock(), 10000, { value: ethFee });
     const id = Number(await manager.tokenLockerCount()) - 1;
     return ethers.getContractAt("TitanLockerV2", await manager.getTokenLockAddress(id));
   }
@@ -186,12 +186,17 @@ describe("TitanLockerV2.sol", () => {
       expect(await mockV4.ownerOf(0)).to.equal(locker.address);
     });
 
-    it("Should collect V4 fees to the owner", async () => {
+    it("Should collect V4 fees to the owner and report the real amounts", async () => {
       const b0 = await c0.balanceOf(deployer.address);
       const b1 = await c1.balanceOf(deployer.address);
+
+      const reported = await locker.callStatic.collectFees();
       await locker.collectFees();
+
       expect((await c0.balanceOf(deployer.address)).sub(b0)).to.equal(OWED0);
       expect((await c1.balanceOf(deployer.address)).sub(b1)).to.equal(OWED1);
+      expect(reported.amount0).to.equal(OWED0);
+      expect(reported.amount1).to.equal(OWED1);
     });
 
     it("Should return the NFT after unlock", async () => {
@@ -226,16 +231,20 @@ describe("TitanLockerV2.sol", () => {
       locker = await ethers.getContractAt("TitanLockerV2", await manager.getTokenLockAddress(id));
     });
 
-    it("Should pay native-ETH fees out of the position manager to the owner", async () => {
+    it("Should pay native-ETH fees out of the position manager to the owner and report the real amounts", async () => {
       const mockEthBefore = await ethers.provider.getBalance(mockV4.address);
       const c1Before = await c1.balanceOf(deployer.address);
 
+      const reported = await locker.callStatic.collectFees();
       await locker.collectFees();
 
       // ETH left the position manager (went to the owner via TAKE_PAIR)
       expect(mockEthBefore.sub(await ethers.provider.getBalance(mockV4.address))).to.equal(OWED_ETH);
       // and the ERC20 side landed exactly on the owner
       expect((await c1.balanceOf(deployer.address)).sub(c1Before)).to.equal(OWED1);
+      // and collectFees itself reports the real amounts, not (0, 0)
+      expect(reported.amount0).to.equal(OWED_ETH);
+      expect(reported.amount1).to.equal(OWED1);
     });
   });
 });

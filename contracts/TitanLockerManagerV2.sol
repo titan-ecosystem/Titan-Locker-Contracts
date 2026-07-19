@@ -37,8 +37,15 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
   error PositionManagerNotAllowed(address positionManager);
   error InvalidPositionManagerKind();
   error InvalidVestingSchedule();
+  error TokenFeeExceedsCallerMax(uint16 liveTokenFeeBps, uint16 maxTokenFeeBps);
+  error ZeroAmount();
 
   uint16 private constant BPS_DENOMINATOR = 10000;
+  /// @dev Hard ceiling on the owner-settable token fee, independent of any
+  /// caller-side slippage protection. Bounds the worst case of a fee change
+  /// landing between a user's createTokenLock/createVestingLock submission
+  /// and its mining: at most 5% of the deposit, never up to 100%.
+  uint16 private constant MAX_TOKEN_FEE_BPS = 500;
 
   bool private _creationEnabled = true;
   uint40 private _tokenLockerCount;
@@ -107,10 +114,13 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
   function createTokenLock(
     address tokenAddress_,
     uint256 amount_,
-    uint40 unlockTime_
+    uint40 unlockTime_,
+    uint16 maxTokenFeeBps_
   ) external payable override allowCreation nonReentrant {
+    if (amount_ == 0) revert ZeroAmount();
+
     uint40 id = _tokenLockerCount++;
-    uint256 amountToLock = _collectFee(id, tokenAddress_, amount_);
+    uint256 amountToLock = _collectFee(id, tokenAddress_, amount_, maxTokenFeeBps_);
 
     TitanLockerV2 locker = new TitanLockerV2(
       address(this), id, _msgSender(), LockKind.ERC20, tokenAddress_, 0, unlockTime_, 0, 0, 0, 0
@@ -137,8 +147,16 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
 
   /// @dev Either takes the flat `_ethFee` (100% of `amount_` gets locked), or -
   /// when no ETH is sent - deducts `_tokenFeeBps` from `amount_` in the token
-  /// itself. Exempt accounts pay nothing and must not send ETH.
-  function _collectFee(uint40 id_, address tokenAddress_, uint256 amount_) private returns (uint256 amountToLock) {
+  /// itself, reverting if the live rate exceeds the caller's own
+  /// `maxTokenFeeBps_` ceiling (protects against a fee change landing between
+  /// submission and mining - the same role `amountOutMin` plays on a swap).
+  /// Exempt accounts pay nothing and must not send ETH.
+  function _collectFee(
+    uint40 id_,
+    address tokenAddress_,
+    uint256 amount_,
+    uint16 maxTokenFeeBps_
+  ) private returns (uint256 amountToLock) {
     bool paidInEth = msg.value != 0;
 
     if (_feeExempt[_msgSender()]) {
@@ -154,7 +172,12 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
       return amount_;
     }
 
-    uint256 tokenFeeAmount = (amount_ * _tokenFeeBps) / BPS_DENOMINATOR;
+    if (_tokenFeeBps > maxTokenFeeBps_) revert TokenFeeExceedsCallerMax(_tokenFeeBps, maxTokenFeeBps_);
+
+    // Round the fee up (ceiling division) instead of down, so any nonzero
+    // amount_ at a nonzero fee rate always pays at least 1 unit - dust
+    // amounts can no longer round down to a free lock.
+    uint256 tokenFeeAmount = (amount_ * _tokenFeeBps + BPS_DENOMINATOR - 1) / BPS_DENOMINATOR;
     amountToLock = amount_ - tokenFeeAmount;
 
     if (tokenFeeAmount != 0) {
@@ -174,14 +197,16 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
     uint256 amount_,
     uint40 start_,
     uint40 cliff_,
-    uint40 end_
+    uint40 end_,
+    uint16 maxTokenFeeBps_
   ) external payable override allowCreation nonReentrant {
+    if (amount_ == 0) revert ZeroAmount();
     if (start_ >= end_ || cliff_ < start_ || cliff_ > end_ || end_ <= uint40(block.timestamp)) {
       revert InvalidVestingSchedule();
     }
 
     uint40 id = _tokenLockerCount++;
-    uint256 amountToLock = _collectFee(id, tokenAddress_, amount_);
+    uint256 amountToLock = _collectFee(id, tokenAddress_, amount_, maxTokenFeeBps_);
 
     // Grant is the nominal post-fee amount; `release()` clamps payouts to the
     // lock's live balance, so fee-on-transfer shortfalls can never over-release.
@@ -338,7 +363,7 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
   }
 
   function setTokenFeeBps(uint16 value_) external override onlyOwner {
-    if (value_ > BPS_DENOMINATOR) revert TokenFeeTooHigh();
+    if (value_ > MAX_TOKEN_FEE_BPS) revert TokenFeeTooHigh();
     _tokenFeeBps = value_;
     emit FeeConfigUpdated(_ethFee, _tokenFeeBps, _feeReceiver);
   }

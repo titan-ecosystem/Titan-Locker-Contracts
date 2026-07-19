@@ -32,7 +32,7 @@ describe("TitanLockerV2 reentrancy (malicious owner via NFT receipt)", () => {
 
     // an ordinary ERC20 lock, unlockable shortly
     const ethFee = await manager.ethFee();
-    await manager.createTokenLock(token.address, 1000, await futureUnlock(100), { value: ethFee });
+    await manager.createTokenLock(token.address, 1000, await futureUnlock(100), 10000, { value: ethFee });
     const id = Number(await manager.tokenLockerCount()) - 1;
     locker = await ethers.getContractAt("TitanLockerV2", await manager.getTokenLockAddress(id));
 

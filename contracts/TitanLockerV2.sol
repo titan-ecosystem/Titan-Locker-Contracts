@@ -252,8 +252,13 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
       );
     } else {
       // UNIV4: decrease liquidity by zero (realises fees) then take both
-      // currencies straight to the owner.
+      // currencies straight to the owner. modifyLiquidities doesn't return the
+      // amounts taken, so capture them as the recipient's balance delta -
+      // native ETH (currency == address(0)) and ERC20s read differently.
       (PoolKeyV4 memory key, ) = IPositionManagerV4(_asset).getPoolAndPositionInfo(_tokenId);
+
+      uint256 balance0Before = _currencyBalance(key.currency0, recipient);
+      uint256 balance1Before = _currencyBalance(key.currency1, recipient);
 
       bytes memory actions = abi.encodePacked(ActionsV4.DECREASE_LIQUIDITY, ActionsV4.TAKE_PAIR);
       bytes[] memory params = new bytes[](2);
@@ -261,9 +266,18 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
       params[1] = abi.encode(key.currency0, key.currency1, recipient);
 
       IPositionManagerV4(_asset).modifyLiquidities(abi.encode(actions, params), block.timestamp);
+
+      amount0 = _currencyBalance(key.currency0, recipient) - balance0Before;
+      amount1 = _currencyBalance(key.currency1, recipient) - balance1Before;
     }
 
     emit FeesCollected(amount0, amount1);
+  }
+
+  /// @dev Balance of `account_` in `currency_` - native ETH (`address(0)`, the
+  /// V4 convention) or an ERC20 token, whichever this pool's currency is.
+  function _currencyBalance(address currency_, address account_) private view returns (uint256) {
+    return currency_ == address(0) ? account_.balance : IERC20(currency_).balanceOf(account_);
   }
 
   // --- vesting release ---

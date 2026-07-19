@@ -14,6 +14,7 @@ import { Ownable } from "../../contracts/Ownable.sol";
 /// per-lock fee-claim isolation guarantee (the anti-rug property).
 contract TitanLockerManagerV2FuzzTest is Test {
   uint16 internal constant BPS_DENOMINATOR = 10000;
+  uint16 internal constant MAX_TOKEN_FEE_BPS = 500;
 
   TitanLockerManagerV2 internal manager;
   TestERC20 internal token;
@@ -43,16 +44,16 @@ contract TitanLockerManagerV2FuzzTest is Test {
 
   function testFuzz_TokenFeePathNeverLocksMoreThanDeposited(uint256 amount, uint16 bps, uint40 futureOffset) public {
     amount = bound(amount, 1, token.totalSupply());
-    bps = uint16(bound(bps, 0, BPS_DENOMINATOR));
+    bps = uint16(bound(bps, 0, MAX_TOKEN_FEE_BPS));
     futureOffset = uint40(bound(futureOffset, 1, 365 days * 5));
     uint40 unlockTime = uint40(block.timestamp) + futureOffset;
 
     manager.setTokenFeeBps(bps);
     token.approve(address(manager), amount);
-    manager.createTokenLock(address(token), amount, unlockTime);
+    manager.createTokenLock(address(token), amount, unlockTime, bps);
 
     uint256 amountToLock = token.balanceOf(address(_latestLocker()));
-    uint256 expectedFee = (amount * bps) / BPS_DENOMINATOR;
+    uint256 expectedFee = (amount * bps + BPS_DENOMINATOR - 1) / BPS_DENOMINATOR;
     assertLe(amountToLock, amount, "must never lock more than deposited");
     assertEq(amountToLock, amount - expectedFee, "amountToLock == amount - fee");
     assertEq(token.balanceOf(feeReceiver), expectedFee, "feeReceiver gets the fee");

@@ -207,6 +207,13 @@ properties are covered by the Foundry invariants and Halmos. It can be re-enable
 
 ### ContractWolf audit
 
+<a href="https://contractwolf.io">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./contractwolf-badge.png">
+    <img src="./contractwolf-badge-black.png" alt="Audited by ContractWolf" width="260">
+  </picture>
+</a>
+
 [ContractWolf](https://contractwolf.io) ran a Standard Audit (manual + automatic analysis)
 against `TitanLockerManagerV2` / `TitanLockerV2`, verified 07/18/2026. Full report:
 **[ContractWolf_Audit_TitanLockerV2.pdf](./ContractWolf_Audit_TitanLockerV2.pdf)**. It

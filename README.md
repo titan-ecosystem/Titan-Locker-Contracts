@@ -20,12 +20,13 @@ Titan Locker is live and free to use on Robinhood Chain:
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.30-363636?logo=solidity)
 ![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-5.6.1-4E5EE4)
-![Tests](https://img.shields.io/badge/tests-90%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-93%20passing-brightgreen)
 ![Slither](https://img.shields.io/badge/slither-clean-brightgreen)
 ![Aderyn](https://img.shields.io/badge/aderyn-clean-brightgreen)
 ![Mythril](https://img.shields.io/badge/mythril-clean-brightgreen)
 ![Foundry](https://img.shields.io/badge/foundry%20fuzz%2Finvariant-28%2F28%20passing-brightgreen)
-![Halmos](https://img.shields.io/badge/halmos-18%2F18%20proven-brightgreen)
+![Halmos](https://img.shields.io/badge/halmos-21%2F21%20proven-brightgreen)
+![Audit](https://img.shields.io/badge/audit-ContractWolf%20passed-brightgreen)
 ![npm audit](https://img.shields.io/badge/npm%20audit-0%20critical%2Fhigh-brightgreen)
 
 Smart contracts for Titan Locker, an open source EVM token locker. Free to use, modify,
@@ -90,6 +91,7 @@ There are two independent generations, deployed side by side (the frontend reads
 | `Util` | [`0x772279251b563028a32cD1505e3F2f8485C746D9`](https://robinhoodchain.blockscout.com/address/0x772279251b563028a32cD1505e3F2f8485C746D9) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x772279251b563028a32cD1505e3F2f8485C746D9?tab=contract) |
 | `TitanLockerManagerV1` | [`0x713E56CeE7060F01F710bF26Aff988264dcfb311`](https://robinhoodchain.blockscout.com/address/0x713E56CeE7060F01F710bF26Aff988264dcfb311) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x713E56CeE7060F01F710bF26Aff988264dcfb311?tab=contract) |
 | `TitanLockerManagerV2` | [`0x26b0654a0756dcd036d4e7215324f3d2be34d79e`](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e?tab=contract) (bytecode == artifact, 19,299 bytes) |
+| `TitanLockerManagerV2_1` | [`0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B`](https://robinhoodchain.blockscout.com/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B?tab=contract) (bytecode == artifact, 19,869 bytes) |
 | `TitanLockerV2` (per-lock child) | verified template — e.g. [`0x0A1C…cd61`](https://robinhoodchain.blockscout.com/address/0x0A1CB1708c019A7C15285543e31996541024cd61?tab=contract) (token lock), [`0x2908…0ca1`](https://robinhoodchain.blockscout.com/address/0x2908D040c8f11d3F87f8E3FF2EAdC6e04a320ca1?tab=contract) (vesting lock) | ✅ verified source |
 
 Verified source reflects the code as it was at deploy time (predates the
@@ -116,6 +118,20 @@ fee paths), linear vesting create → partial release → full release, and
 post-unlock withdrawal. Full writeup with linked tx hashes:
 **[TEST_REPORT_V2.md](./TEST_REPORT_V2.md)**.
 
+**Titan Locker V2.1 is deployed and live** at
+[`0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B`](https://robinhoodchain.blockscout.com/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B)
+(deploy tx [`0xb64ba37f…2ebd4332d6e`](https://robinhoodchain.blockscout.com/tx/0xb64ba37f4bf2d84c85b23d06f78b6434dc27e0379428745ba4f822ebd4332d6e),
+block 13,944,087) — the same `TitanLockerManagerV2` code, redeployed fresh with the
+[ContractWolf audit fixes](#contractwolf-audit) below (version 2.1.0). Its on-chain
+runtime bytecode is an **exact match to the compiled artifact** (19,869 bytes — larger
+than the original V2's 19,299 because of the added validation), verified on Blockscout,
+and both Uniswap V3/V4 position managers are already allowlisted on it. The original
+`TitanLockerManagerV2` at `0x26b0654a…be34d79e` is **untouched** and keeps running its
+original logic — these contracts have no upgrade proxy, so the fix only takes effect for
+locks created against the new address going forward; existing locks on the original V2
+are unaffected either way, since none of the findings below involve custody of an
+already-created lock.
+
 Uniswap **V3/V4 LP** locking is supported on Robinhood Chain — Uniswap v2/v3/v4 are
 live there. It's enabled by owner-allowlisting each chain's canonical position
 manager via `setPositionManager(pm, kind, true)` (or `scripts/setPositionManagers.js`);
@@ -131,11 +147,11 @@ before allowlisting in production.
 ## Security
 
 Every contract in this repo has been run through a full stack of independent static
-analysis, symbolic execution, and fuzz-testing tools, plus a manual line-by-line review.
-Nothing here has been through a paid third-party audit yet - treat these results as a
-strong pre-audit baseline.
+analysis, symbolic execution, and fuzz-testing tools, plus a manual line-by-line review -
+and, as of the V2.1 fixes below, a paid third-party audit.
 
-The table below is the V1 baseline; the [V2 results](#v2-security-results) follow it.
+The table below is the V1 baseline; the [V2 results](#v2-security-results) and the
+[ContractWolf audit](#contractwolf-audit) follow it.
 
 | Tool | What it does | Result |
 |---|---|---|
@@ -170,9 +186,9 @@ V2 was put through the same stack. Results:
 
 | Tool | Result |
 |---|---|
-| **Hardhat/Mocha** | **90 passing** total (V1 parity + V2: ERC20, V3/V4 create→collect→withdraw, allowlist gating, cross-lock fee-claim isolation, stray-NFT rescue, and vesting: cliff/linear release, schedule validation, kind guards) |
+| **Hardhat/Mocha** | **93 passing** total (V1 parity + V2: ERC20, V3/V4 create→collect→withdraw, allowlist gating, cross-lock fee-claim isolation, stray-NFT rescue, vesting: cliff/linear release, schedule validation, kind guards, and V2.1's caller-max-fee guard + both zero-amount reverts) |
 | **Foundry** fuzz + invariant | **28/28** total. Adds `invariant_feeClaimIsolation`, `invariant_managerHoldsNothing`, and `invariant_vestingNeverOverReleases` (cumulative released ≤ the grant), plus vesting fuzz (vested is monotonic, bounded by total, and never over-releases) - each invariant exercised over 25,600 calls |
-| **Halmos** | **18/18 proven** total (V2 + vesting: fee-math parity, allowlist owner-gating/kind validation, unlock-time gate, owner-only `withdraw`/`collectFees`/`release`, and `vested ≤ total` over the time domain) |
+| **Halmos** | **21/21 proven** total (V2 + vesting: fee-math parity, allowlist owner-gating/kind validation, unlock-time gate, owner-only `withdraw`/`collectFees`/`release`, `vested ≤ total` over the time domain, and V2.1's caller-max-fee revert + both zero-amount reverts, proven for every possible input) |
 | **Mythril** | **0 findings** on both `TitanLockerManagerV2` and `TitanLockerV2` |
 | **Slither / Aderyn** | Only informational findings and the **same false-positive classes as V1** (caller-sourced `from`, an interface stub, an intentional zero-init counter, ETH sent only to the owner-set fee receiver / `onlyOwner`) - 0 unaddressed High/Medium |
 
@@ -185,6 +201,27 @@ no ledger to get wrong) and proven by the `feeClaimIsolation` fuzz test and inva
 compile step crashes on a NatSpec-serialization bug unrelated to the contracts; the same
 properties are covered by the Foundry invariants and Halmos. It can be re-enabled once the
 `crytic-compile` toolchain is pinned/patched.
+
+### ContractWolf audit
+
+[ContractWolf](https://contractwolf.io) ran a Standard Audit (manual + automatic analysis)
+against `TitanLockerManagerV2` / `TitanLockerV2`, verified 07/18/2026. Full report:
+**[ContractWolf_Audit_TitanLockerV2.pdf](./ContractWolf_Audit_TitanLockerV2.pdf)**. It
+found 4 issues (1 Major, 2 Medium, 1 Informational; 0 Critical) - all 4 were fixed in
+[`48db4ed`](https://github.com/titan-ecosystem/Titan-Locker-Contracts/commit/48db4eda683769b418189114de0c803f73e5b9af)
+and shipped as version 2.1.0, deployed fresh as [`TitanLockerManagerV2_1`](#deployments)
+since these contracts have no upgrade proxy.
+
+| Finding | Fix |
+|---|---|
+| **SWC-114 — Transaction Order Dependence** (Major): a token-fee change landing between a user's submission and mining could confiscate the entire deposit | Capped the owner-settable token fee at 500 bps (5%), down from 10000 (100%) - bounds the worst case to a 5% loss. Added a caller-supplied `maxTokenFeeBps_` to `createTokenLock`/`createVestingLock`: if the live fee exceeds what the caller specified at submission, the call reverts with `TokenFeeExceedsCallerMax` instead of silently taking more - the same role `amountOutMin` plays on a DEX swap. |
+| **Logic error — bps rounding lets dust locks pay zero fee** (Medium): integer truncation let any deposit under ~20 units round its fee down to exactly zero, letting anyone spam locks for free | Round the token fee up (ceiling division) instead of down. Ordinary deposits are unaffected - the rounding direction only changes the outcome when the true fee is already below 1 whole unit. |
+| **Logic error — `collectFees()` misreports amounts for UNIV4 locks** (Medium): named return variables were never assigned on the UNIV4 path, so the function always reported `(0, 0)` even though the correct amount was paid out | Capture the real collected amounts via a balance-delta instead, reading native ETH (`currency == address(0)`) and ERC20 currencies separately. |
+| **Logic flaw — missing validation allows zero-amount locks** (Informational): a zero-amount lock could be created for free, no token balance or approval required, cluttering the on-chain index for no reason | `createTokenLock` and `createVestingLock` now reject `amount_ == 0`. |
+
+Test coverage was added/updated across the Hardhat, Foundry fuzz/invariant, and Halmos
+symbolic suites for every fix above - the [V2 security results](#v2-security-results)
+table above reflects the post-fix counts.
 
 ## Development
 
@@ -203,6 +240,12 @@ Deploying V2: `03_deploy_locker_v2.js` deploys the V2 manager. After deploy, run
 `scripts/setPositionManagers.js` to allowlist the V3/V4 position managers for the
 target chain (it refuses any address with no contract code as a safety check).
 
+Deploying V2.1 (the audit-fixed redeploy): `04_deploy_locker_v2_1.js` deploys it
+under its own name, reusing the existing `Util` library. Run
+`scripts/setPositionManagersV2_1.js` and `scripts/setFeesV2_1.js` afterward to
+allowlist V3/V4 position managers and set fees on the new instance - it starts
+with neither configured, same as a fresh V2 deploy.
+
 ## FAQ
 
 **What is Titan Locker?**
@@ -210,6 +253,12 @@ Titan Locker is an open-source (GPL-3.0), immutable EVM smart-contract suite for
 
 **Is Titan Locker V2 deployed and live?**
 Yes — `TitanLockerManagerV2` is live on **Robinhood Chain (chain ID 4663)** at [`0x26b0654a0756dcd036d4e7215324f3d2be34d79e`](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e), verified end-to-end on-chain — see [TEST_REPORT_V2.md](./TEST_REPORT_V2.md).
+
+**Has Titan Locker been audited?**
+Yes — [ContractWolf](https://contractwolf.io) ran a Standard Audit against `TitanLockerManagerV2`/`TitanLockerV2`; all 4 findings were closed and shipped as version 2.1.0. Full report: [ContractWolf_Audit_TitanLockerV2.pdf](./ContractWolf_Audit_TitanLockerV2.pdf). See [ContractWolf audit](#contractwolf-audit) for what was found and how each was fixed.
+
+**Should I use `TitanLockerManagerV2` or `TitanLockerManagerV2_1`?**
+Use **V2.1** (`0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B`) for new locks — it carries the ContractWolf audit fixes. The original V2 deployment is untouched; existing locks on it remain fully safe (none of the findings involve custody of an already-created lock), and it's kept live only so those existing locks keep working normally.
 
 **Is Titan Locker upgradeable?**
 No. The contracts are **immutable / non-upgradeable** — plain constructors, no proxy, no `delegatecall`, no admin upgrade path. New versions are separate deployments; existing locks are never affected.

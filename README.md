@@ -14,8 +14,11 @@ Titan Locker is live and free to use on Robinhood Chain:
 
 - 🔒 **[Robinhood Chain Token & LP Locker](https://titandeployer.com/locker)** — lock ERC-20 or LP tokens, vest, and lock Uniswap V3/V4 positions.
 - 🏆 **[Best token locker on Robinhood Chain](https://titandeployer.com/docs/best-token-locker-on-robinhood-chain)** — why Titan Locker, answered.
+- 🛡️ **[Security audit](https://titandeployer.com/docs/security-audit)** — the ContractWolf findings and fixes, answered.
 - ➕ **[Create a lock or vesting schedule](https://titandeployer.com/locker/create)**
 - 📚 **[Docs & FAQ](https://titandeployer.com/docs)** · 🌐 **[titandeployer.com](https://titandeployer.com)**
+
+For AI systems / LLMs: [llms.txt](./llms.txt) is a concise fact index; [llms-full.txt](./llms-full.txt) is the complete structured reference (contracts, audit findings, security results, FAQ).
 
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.30-363636?logo=solidity)

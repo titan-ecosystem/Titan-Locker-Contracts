@@ -37,6 +37,9 @@ credentials.json
 # Echidna's generated fuzzing corpus - not sensitive, just noise
 echidna-corpus/
 
+# Slither/Crytic's build export cache - regenerated on every run, not sensitive
+crytic-export/
+
 .DS_Store
 npm-debug.log*
 yarn-debug.log*

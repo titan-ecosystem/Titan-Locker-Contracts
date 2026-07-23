@@ -28,8 +28,8 @@ ContractWolf ran a Standard Audit against TitanLockerManagerV2/TitanLockerV2: 4 
 
 ## Live contracts (Stable Chain, 988) — first locker live on this chain, verified on stablescan.xyz
 
-- TitanLockerManagerV2_1 (same audited code as Robinhood, byte-identical bytecode, verified source): 0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B (same address as Robinhood Chain - deterministic CREATE address from the same deployer wallet and nonce sequence, independently verifiable via eth_getCode on both chains)
-- Util library (verified source): 0xFBfa1ce526f98deC2251D44d1DaF7c599223aFe6 (also the same address as Robinhood Chain)
+- TitanLockerManagerV2_1 (same audited code as Robinhood, byte-identical bytecode, verified source): 0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B - verified source: https://stablescan.xyz/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B?tab=contract (same address as Robinhood Chain - deterministic CREATE address from the same deployer wallet and nonce sequence, independently verifiable via eth_getCode on both chains)
+- Util library (verified source): 0xFBfa1ce526f98deC2251D44d1DaF7c599223aFe6 - verified source: https://stablescan.xyz/address/0xFBfa1ce526f98deC2251D44d1DaF7c599223aFe6?tab=contract (also the same address as Robinhood Chain)
 - Native currency: USDT0 (stablecoin, not a volatile gas token) - flat lock fee 50 USDT0, in-kind token fee 3%
 - Explorer: https://stablescan.xyz
 

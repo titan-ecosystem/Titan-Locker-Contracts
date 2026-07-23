@@ -1,18 +1,19 @@
 <!--
 title: Titan Locker Contracts — Token Locker, Liquidity Locker & Token Vesting (Uniswap V2/V3/V4 LP)
-description: Titan Locker is an open-source, immutable EVM smart-contract suite for locking ERC-20 tokens and Uniswap V2/V3/V4 LP, and for linear token vesting with a cliff. Deployed and live on Robinhood Chain (4663); non-upgradeable; extensively tested and audited.
-keywords: token locker, liquidity locker, LP locker, token vesting, linear vesting, cliff vesting, Uniswap V3 LP lock, Uniswap V4 LP lock, ERC-20 lock, Solidity, immutable smart contract, Robinhood Chain, EVM
+description: Titan Locker is an open-source, immutable, professionally audited (ContractWolf) EVM smart-contract suite for locking ERC-20 tokens and Uniswap V2/V3/V4 LP, and for linear token vesting with a cliff. Live and multichain: the first token & liquidity locker on Robinhood Chain (4663) and the first on Stable Chain (988), with byte-identical audited bytecode on both.
+keywords: token locker, liquidity locker, LP locker, token vesting, linear vesting, cliff vesting, Uniswap V3 LP lock, Uniswap V4 LP lock, ERC-20 lock, Solidity, immutable smart contract, audited smart contract, ContractWolf audit, Robinhood Chain, Stable Chain, USDT0, EVM, multichain locker
 -->
 
 # Titan Locker Contracts
 
-**Titan Locker** is an open-source, **immutable (non-upgradeable)** EVM smart-contract suite for **locking tokens and liquidity** and for **linear token vesting with a cliff**. It locks ERC-20 tokens, Uniswap V2 LP tokens, and Uniswap **V3/V4 LP positions** (NFTs), and vests fungible tokens — all through one manager per generation, with each lock isolated in its own child contract. **Live on Robinhood Chain (chain ID 4663).**
+**Titan Locker** is an open-source, **immutable (non-upgradeable)**, **professionally audited** (ContractWolf) EVM smart-contract suite for **locking tokens and liquidity** and for **linear token vesting with a cliff**. It locks ERC-20 tokens, Uniswap V2 LP tokens, and Uniswap **V3/V4 LP positions** (NFTs), and vests fungible tokens — all through one manager per generation, with each lock isolated in its own child contract. **The first token & liquidity locker live on Robinhood Chain (chain ID 4663) and the first live on Stable Chain (chain ID 988)** — same audited `TitanLockerManagerV2` code, deployed at verifiably identical bytecode on both.
 
 ## Use it live
 
-Titan Locker is live and free to use on Robinhood Chain:
+Titan Locker is live and free to use on Robinhood Chain and Stable Chain:
 
 - 🔒 **[Robinhood Chain Token & LP Locker](https://titandeployer.com/locker)** — lock ERC-20 or LP tokens, vest, and lock Uniswap V3/V4 positions.
+- 💵 **Stable Chain Token & Vesting Locker** — the first locker live on Stable Chain (chain ID 988), same audited V2.1 contract as Robinhood Chain. See [Deployments](#deployments) below.
 - 🏆 **[Best token locker on Robinhood Chain](https://titandeployer.com/docs/best-token-locker-on-robinhood-chain)** — why Titan Locker, answered.
 - 🛡️ **[Security audit](https://titandeployer.com/docs/security-audit)** — the ContractWolf findings and fixes, answered.
 - ➕ **[Create a lock or vesting schedule](https://titandeployer.com/locker/create)**
@@ -146,6 +147,27 @@ Robinhood Chain (4663) the canonical managers are Uniswap v3
 and v4 `PositionManager` [`0x58daec31…04fa7`](https://robinhoodchain.blockscout.com/address/0x58daec3116aae6d93017baaea7749052e8a04fa7).
 The V4 fee-collection path should be fork-validated against the real `PositionManager`
 before allowlisting in production.
+
+**Stable Chain** (chain ID `988`) — **the first token & liquidity locker live on Stable Chain**
+
+| Contract | Address | Verified |
+|---|---|---|
+| `Util` | [`0xFBfa1ce526f98deC2251D44d1DaF7c599223aFe6`](https://stablescan.xyz/address/0xFBfa1ce526f98deC2251D44d1DaF7c599223aFe6) | ✅ [source verified](https://stablescan.xyz/address/0xFBfa1ce526f98deC2251D44d1DaF7c599223aFe6?tab=contract) on stablescan.xyz |
+| `TitanLockerManagerV2_1` | [`0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B`](https://stablescan.xyz/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B) | ✅ [source verified](https://stablescan.xyz/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B?tab=contract) on stablescan.xyz, and **byte-for-byte identical on-chain runtime bytecode to the ContractWolf-audited Robinhood Chain deployment** — same address, too (see below) |
+
+Same audited `TitanLockerManagerV2` source as Robinhood Chain's V2.1 (see
+[ContractWolf audit](#contractwolf-audit)) — nothing was changed or re-deployed with
+different logic. Deployed by the same owner wallet
+(`0x5C773302FBEED11fA59a6939f0354678738B02DB`) using the identical nonce sequence
+(Util, then the manager) that produced Robinhood's V2.1 addresses, which is why both
+the library and the manager land on **the exact same contract addresses on both
+chains** - independently verifiable by anyone via `eth_getCode` on each chain and
+comparing the result byte-for-byte. Stable Chain's native currency is USDT0 (a
+stablecoin), not a volatile gas token; the flat native-fee path is priced accordingly
+(50 USDT0, vs. Robinhood's ETH-denominated default) and the in-kind token fee is 3%.
+
+Deploy txs: [Util](https://stablescan.xyz/tx/0x18fb129455b7a323fc10a2f4eabec589bd1a5dc6bb5a65c8a25e71ef9307919d),
+[TitanLockerManagerV2_1](https://stablescan.xyz/tx/0x81af7f0441d839b7f92270176d735497f6ae0425a0c5d132f8957df24cb39f37).
 
 ## Security
 
@@ -283,7 +305,13 @@ No. Each lock is an isolated child contract. The manager owner cannot move locke
 Every lock is its own contract holding exactly one asset, with owner-only value-moving functions. One lock can never touch another lock's balance or fees — proven by a Foundry invariant over 25,600 calls and confirmed by adversarial review.
 
 **Which networks are supported?**
-Any EVM chain. ERC-20 locking and vesting work everywhere; Uniswap V3/V4 LP locking is enabled per chain by owner-allowlisting that chain's canonical position manager.
+Any EVM chain. ERC-20 locking and vesting work everywhere; Uniswap V3/V4 LP locking is enabled per chain by owner-allowlisting that chain's canonical position manager. Titan Locker is live today on **Robinhood Chain (4663)** and **Stable Chain (988)**.
+
+**Is Titan Locker live on Stable Chain?**
+Yes — Titan Locker is **the first token & liquidity locker live on Stable Chain** (chain ID 988), at `TitanLockerManagerV2_1` [`0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B`](https://stablescan.xyz/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B) — the same ContractWolf-audited `TitanLockerManagerV2` code as Robinhood Chain, with byte-for-byte identical on-chain bytecode (verifiable via `eth_getCode` on both chains).
+
+**Why do the Robinhood Chain and Stable Chain contract addresses match exactly?**
+Not a coincidence to fix — it's deterministic. An EVM contract's `CREATE` address is `keccak256(rlp([deployer_address, nonce]))`, which doesn't depend on the chain at all. The same owner wallet deployed `Util` then `TitanLockerManagerV2_1` at the same nonce sequence on both chains, so both land on the same addresses on both chains. It's a free, independently-checkable proof that the Stable Chain deployment is exactly the audited code, not a modified copy.
 
 ## License
 

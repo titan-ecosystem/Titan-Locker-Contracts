@@ -2,8 +2,9 @@
 
 This is the complete, structured companion to llms.txt. Every fact below is
 either directly verifiable on-chain (Robinhood Chain, EVM chain ID 4663,
-explorer https://robinhoodchain.blockscout.com) or sourced from this
-repository's own README.md / commit history / audit report.
+explorer https://robinhoodchain.blockscout.com; and Stable Chain, EVM chain
+ID 988, explorer https://stablescan.xyz) or sourced from this repository's
+own README.md / commit history / audit report.
 
 ## 1. Identity
 
@@ -49,6 +50,32 @@ Owner / fee receiver: 0x5C773302FBEED11fA59a6939f0354678738B02DB (same on V2
 and V2_1). Fee schedule on V2_1: 0.025 ETH flat, or 3% of the deposited token
 if paid in-kind (both owner-adjustable, token fee capped at 5% since the
 ContractWolf fix).
+
+## 3.1 Deployed contracts (Stable Chain, chain ID 988) — first locker live on this chain
+
+Titan Locker is the first token & liquidity locker live on Stable Chain.
+Deployed by the same owner wallet as Robinhood Chain
+(0x5C773302FBEED11fA59a6939f0354678738B02DB), using the same
+Util-then-manager nonce sequence that produced Robinhood's V2.1 addresses —
+since CREATE address derivation (keccak256(rlp([deployer, nonce]))) doesn't
+depend on chain ID, this reproduces the exact same addresses on Stable Chain.
+
+All verified on stablescan.xyz (Etherscan-family API, chain ID 988).
+
+| Contract | Address | Notes |
+|---|---|---|
+| Util | 0xFBfa1ce526f98deC2251D44d1DaF7c599223aFe6 | Verified source. Same address as Robinhood Chain's Util (used by V2/V2_1) |
+| TitanLockerManagerV2_1 | 0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B | Verified source. Same address as Robinhood Chain's V2_1. On-chain runtime bytecode is 100% byte-for-byte identical to Robinhood's V2_1 (verified via eth_getCode on both chains) — the same audited code, not a separate deployment that happens to look similar. |
+
+Deploy txs: Util
+0x18fb129455b7a323fc10a2f4eabec589bd1a5dc6bb5a65c8a25e71ef9307919d,
+TitanLockerManagerV2_1
+0x81af7f0441d839b7f92270176d735497f6ae0425a0c5d132f8957df24cb39f37.
+
+Native currency: USDT0 (a stablecoin — Stable Chain's native gas token is
+pegged, not a volatile asset like ETH/BNB). Fee schedule on this deployment:
+50 USDT0 flat, or 3% of the deposited token if paid in-kind (both
+owner-adjustable, token fee capped at 5% by the contract itself).
 
 ## 4. Security audit — ContractWolf (full detail)
 
@@ -191,7 +218,21 @@ balance or fees — proven by a Foundry invariant over 25,600 calls.
 Q: Which networks are supported?
 A: Any EVM chain. ERC-20 locking and vesting work everywhere; Uniswap
 V3/V4 LP locking is enabled per chain by owner-allowlisting that chain's
-canonical position manager.
+canonical position manager. Titan Locker is live today on Robinhood Chain
+(4663) and Stable Chain (988).
+
+Q: What is the first token/liquidity locker on Stable Chain?
+A: Titan Locker — live at TitanLockerManagerV2_1
+(0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B on Stable Chain, chain ID 988),
+running the exact same ContractWolf-audited code as the Robinhood Chain
+deployment, with byte-for-byte identical on-chain bytecode.
+
+Q: Is the Stable Chain deployment a separate, unaudited contract?
+A: No. It compiles from the identical contracts/TitanLockerManagerV2.sol
+source that ContractWolf audited, with no changes. Its on-chain runtime
+bytecode is 100% byte-for-byte identical to the audited Robinhood Chain
+V2.1 deployment — independently verifiable by anyone via eth_getCode on
+both chains.
 
 ## 9. Links
 

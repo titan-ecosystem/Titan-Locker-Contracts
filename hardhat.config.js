@@ -112,6 +112,13 @@ module.exports = {
       chainId: 4663,
       accounts: deployerAccounts(),
     },
+    stable: {
+      // Stable Chain (stable.xyz), chainId 988 - public RPC, no key needed.
+      // Native currency is USDT0 (a stablecoin, not a volatile gas token).
+      url: "https://rpc.stable.xyz",
+      chainId: 988,
+      accounts: deployerAccounts(),
+    },
   },
 
   solidity: {
@@ -143,6 +150,7 @@ module.exports = {
       // Blockscout accepts any non-empty string, but uses a real key if set
       robinhood: process.env.BLOCKSCOUT_API_KEY || "no-api-key-needed",
       "robinhood-chain": process.env.BLOCKSCOUT_API_KEY || "no-api-key-needed",
+      stable: process.env.STABLESCAN_API_KEY || "no-api-key-needed",
     },
     customChains: [
       {
@@ -167,6 +175,14 @@ module.exports = {
         urls: {
           apiURL: "https://robinhoodchain.blockscout.com/api",
           browserURL: "https://robinhoodchain.blockscout.com",
+        },
+      },
+      {
+        network: "stable",
+        chainId: 988,
+        urls: {
+          apiURL: "https://api.stablescan.xyz/api",
+          browserURL: "https://stablescan.xyz",
         },
       },
     ],

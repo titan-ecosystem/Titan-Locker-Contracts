@@ -105,8 +105,10 @@ Comment-only differences don't affect logic, but do change the embedded
 metadata hash, so re-verifying with a newer source snapshot isn't possible
 without redeploying.
 
-Owner / fee receiver: `0x5C773302FBEED11fA59a6939f0354678738B02DB`. Current fee schedule:
-0.05 ETH flat, or 3% of the deposited token if paid in-kind (both owner-adjustable).
+Owner / fee receiver: `0x5C773302FBEED11fA59a6939f0354678738B02DB`. Current fee schedule
+on the V2/V2.1 managers (where all new locks are created): 0.025 ETH flat, or 3% of the
+deposited token if paid in-kind (both owner-adjustable). The legacy V1 manager still
+carries its original 0.05 ETH setting.
 
 Manually verified end-to-end on this live deployment (both fee paths, both
 sides of the unlock-time gate, real transactions) - see

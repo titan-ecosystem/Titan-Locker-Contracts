@@ -47,6 +47,8 @@ module.exports = {
   defaultNetwork,
 
   gasReporter: {
+    // Keep gas reporting opt-in; ordinary tests must not require a local RPC port.
+    enabled: process.env.REPORT_GAS === "true",
     currency: "USD",
     coinmarketcap: process.env.COINMARKETCAP || null,
   },
@@ -117,6 +119,12 @@ module.exports = {
       // Native currency is USDT0 (a stablecoin, not a volatile gas token).
       url: "https://rpc.stable.xyz",
       chainId: 988,
+      accounts: deployerAccounts(),
+    },
+    "kinetiq-elysium-testnet": {
+      // Kinetiq Elysium testnet. The mainnet chain ID is not official yet.
+      url: process.env.ELYSIUM_TESTNET_RPC_URL || "https://testnet-rpc.elysium.kinetiq.xyz",
+      chainId: 99801,
       accounts: deployerAccounts(),
     },
   },

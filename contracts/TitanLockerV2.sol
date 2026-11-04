@@ -375,13 +375,15 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
     stray.safeTransfer(_owner(), stray.balanceOf(address(this)));
   }
 
-  /// @dev Rescue an ERC721 that landed on this contract by mistake. The locked
-  /// position NFT itself can never be moved this way - it is only releasable via
-  /// `withdraw()` after `unlockTime` - so this only ever frees genuinely stray
-  /// NFTs (the contract accepts any NFT via ERC721Holder, so without this they
-  /// would be stuck forever).
+  /// @dev Rescue an ERC721 that landed on this contract by mistake. A locked
+  /// position's token ID is never recoverable here. For fungible locks, an NFT
+  /// from the locked token's own collection is recoverable only after maturity:
+  /// some dual-interface tokens link NFT ownership to the locked ERC20 balance.
   function withdrawNft(address collection_, uint256 tokenId_) external onlyOwner nonReentrant {
-    if (collection_ == _asset && (_isFungible() || tokenId_ == _tokenId)) {
+    if (collection_ == _asset && (
+      (_isFungible() && uint40(block.timestamp) < _unlockTime) ||
+      (!_isFungible() && tokenId_ == _tokenId)
+    )) {
       revert CannotSweepLockedToken();
     }
     IERC721(collection_).safeTransferFrom(address(this), _owner(), tokenId_);

@@ -1,0 +1,24 @@
+# Titan Locker custody and hook review — 5 November 2026
+
+## Result
+
+No additional **non-owner principal withdrawal**, hook-driven NFT transfer, or unlock-time bypass was reproduced in the patched V2.2 candidate. This is a scoped result, not a guarantee against arbitrary token, pool, sequencer, or administrative behavior. The live Robinhood V2.1 manager still creates immutable children with the four previously reported findings, including the conditional linked ERC20/ERC721 early-withdrawal path.
+
+## Checks performed
+
+- Every asset-moving entry point in `TitanLockerV2` was traced through its ownership, lock-kind, time, and reentrancy checks. A new cross-kind test proves that token, vesting, V3, and V4 principal exit paths fail at `unlockTime - 1`; the owner succeeds at the exact unlock time; a non-owner fails even after maturity.
+- Rescue of the locked ERC20 is rejected. Same-collection NFT rescue is rejected while a fungible lock is active, then permitted after maturity so unrelated NFTs are recoverable. The position NFT's own ID is always rejected by NFT rescue. Vesting cannot use ordinary withdrawal and cannot recover surplus before the end time. An outsider cannot call owner-only rescue functions.
+- The actual local Uniswap V4 `PoolManager` and `PositionManager` were used with a hostile hook and a real swap. During fee collection, the hook could not reenter Titan collection, withdraw the NFT, rescue it, take stray assets, change ownership or unlock time, reenter PositionManager liquidity actions, or transfer the NFT. A separate outsider call to PositionManager could neither decrease locked liquidity nor transfer the NFT. The NFT also remained protected from a non-owner hook at maturity.
+- Halmos symbolic checks passed for non-owner withdrawal and fee collection, pre-unlock withdrawal over their symbolic inputs, vesting owner access and cap, and the patched in-kind fee behavior including fully consumed deposits.
+
+Verification: **62/62 Foundry**, **93/93 Hardhat**, **2/2 read-only Kinetiq Elysium testnet-fork**, and **6/6 real local Uniswap V4 integration** tests passed. The V4 harness is at `../titan-audit/remediation-candidate/v4-source-check/test/position-managers/TitanRealV4Integration.t.sol`; its linked Titan deployment bytecode matches this branch's compiled manager and child artifacts. No live transaction was sent.
+
+## Remaining behavior that matters
+
+1. **A V4 hook can block fee claims without draining the NFT.** A hook requiring data works with `collectFeesWithHookData`; a hook returning a fee-taking delta can still cause the PositionManager's zero-liquidity claim to revert (`SafeCastOverflow` in the tested Uniswap build). The same claim also reverts when the NFT owner calls PositionManager directly after maturity, so this is a pool/PositionManager compatibility limit, not a new Titan custody bypass. A hook can also intentionally revert. In both tests, Titan's NFT remains until the owner withdraws it at maturity.
+2. **The V4 manager allowlist does not vet individual pools or hooks.** If the official PositionManager is enabled, any position from that manager can enter Titan, including one with a hostile hook. Keep V4 disabled on a new chain until its exact deployment and the policy for hooked positions are reviewed; warn or reject incompatible hooks rather than promising that every V4 fee claim will work. Uniswap [documents pool-specific hook behavior](https://developers.uniswap.org/docs/protocols/v4/concepts/hooks).
+3. **Locking an NFT does not freeze its economic value.** A pool hook or underlying token can alter fees, block claims, rebase balances, tax transfers, or affect pool value under that external system's rules. Titan's custody checks cannot prove an arbitrary token or pool is economically safe.
+4. **Time is chain time.** The contracts compare against `block.timestamp`. Arbitrum [documents sequencer-controlled, bounded L2 timestamps](https://docs.arbitrum.io/arbitrum-essentials/arbitrum-vs-ethereum/block-numbers-and-time); Kinetiq Elysium's final chain-specific bounds should be checked before promising an exact UTC unlock moment. A lock owner can extend their own unlock time; no non-owner user or hook could reduce or change it through the tested paths.
+5. **The manager's ownership index remains open to unsolicited entries.** A creator can transfer their own lock to another address without acceptance, growing that address's index and the gas used by later ownership transfers. This can harm availability but was not shown to move or release locked principal.
+
+The complete production ERC404 implementation was not run as a live lock; the linked-token patch was tested with a behavioral model. No Elysium mainnet deployment, mainnet end-to-end transaction, or byte-for-byte verification of a deployed child exists yet.

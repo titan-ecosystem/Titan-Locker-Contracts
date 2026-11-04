@@ -40,12 +40,23 @@ contract TitanLockerManagerV2HalmosTest is Test {
 
     manager.setTokenFeeBps(bps);
     token.approve(address(manager), amount);
+    uint256 expectedFee = (amount * bps + BPS_DENOMINATOR - 1) / BPS_DENOMINATOR;
+    if (expectedFee == amount) {
+      uint40 countBefore = manager.tokenLockerCount();
+      try manager.createTokenLock(address(token), amount, uint40(block.timestamp) + 1, bps) {
+        assertTrue(false, "a fee consuming the deposit must not create a lock");
+      } catch (bytes memory reason) {
+        assertEq(reason, abi.encodeWithSelector(TitanLockerManagerV2.ZeroAmount.selector));
+      }
+      assertEq(manager.tokenLockerCount(), countBefore);
+      assertEq(token.balanceOf(feeReceiver), 0);
+      return;
+    }
     manager.createTokenLock(address(token), amount, uint40(block.timestamp) + 1, bps);
 
     uint256 amountToLock = token.balanceOf(_latestLockerAddress());
     assertLe(amountToLock, amount, "amountToLock must never exceed the requested amount");
 
-    uint256 expectedFee = (amount * bps + BPS_DENOMINATOR - 1) / BPS_DENOMINATOR;
     assertEq(amountToLock, amount - expectedFee, "amountToLock must equal amount minus the bps fee");
     assertEq(token.balanceOf(feeReceiver), expectedFee, "feeReceiver must receive exactly the bps fee");
   }

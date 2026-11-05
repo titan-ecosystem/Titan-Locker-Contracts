@@ -99,6 +99,8 @@ contract CustodyBoundaries is Test {
         vm.warp(UNLOCK - 1);
         vm.expectRevert(abi.encodeWithSelector(TitanLockerV2.LockStillActive.selector, UNLOCK));
         tokenLock.withdraw();
+        vm.expectRevert(abi.encodeWithSelector(TitanLockerV2.LockStillActive.selector, UNLOCK));
+        tokenLock.withdrawTo(address(this));
         vm.expectRevert(TitanLockerV2.CannotSweepLockedToken.selector);
         tokenLock.withdrawToken(address(token));
         vm.expectRevert(TitanLockerV2.CannotSweepLockedToken.selector);
@@ -106,6 +108,8 @@ contract CustodyBoundaries is Test {
 
         vm.expectRevert(TitanLockerV2.WrongLockKind.selector);
         vestingLock.withdraw();
+        vm.expectRevert(TitanLockerV2.WrongLockKind.selector);
+        vestingLock.withdrawTo(address(this));
         vm.expectRevert(TitanLockerV2.CannotSweepLockedToken.selector);
         vestingLock.withdrawToken(address(token));
         vm.expectRevert(TitanLockerV2.CannotSweepLockedToken.selector);
@@ -115,10 +119,14 @@ contract CustodyBoundaries is Test {
 
         vm.expectRevert(abi.encodeWithSelector(TitanLockerV2.LockStillActive.selector, UNLOCK));
         v3Lock.withdraw();
+        vm.expectRevert(abi.encodeWithSelector(TitanLockerV2.LockStillActive.selector, UNLOCK));
+        v3Lock.withdrawTo(address(this));
         vm.expectRevert(TitanLockerV2.CannotSweepLockedToken.selector);
         v3Lock.withdrawNft(address(v3), 0);
         vm.expectRevert(abi.encodeWithSelector(TitanLockerV2.LockStillActive.selector, UNLOCK));
         v4Lock.withdraw();
+        vm.expectRevert(abi.encodeWithSelector(TitanLockerV2.LockStillActive.selector, UNLOCK));
+        v4Lock.withdrawTo(address(this));
         vm.expectRevert(TitanLockerV2.CannotSweepLockedToken.selector);
         v4Lock.withdrawNft(address(v4), 0);
         assertEq(v3.ownerOf(0), address(v3Lock));
@@ -132,7 +140,7 @@ contract CustodyBoundaries is Test {
         assertEq(vestingLock.release(), 100 ether);
         assertEq(token.balanceOf(address(vestingLock)), 0);
         v3Lock.withdraw();
-        v4Lock.withdraw();
+        v4Lock.withdrawTo(address(this));
         assertEq(v3.ownerOf(0), address(this));
         assertEq(v4.ownerOf(0), address(this));
     }
@@ -149,6 +157,8 @@ contract CustodyBoundaries is Test {
         v3Lock.withdraw();
         vm.expectRevert(abi.encodeWithSelector(Ownable.CallerNotOwner.selector, attacker));
         v4Lock.withdraw();
+        vm.expectRevert(abi.encodeWithSelector(Ownable.CallerNotOwner.selector, attacker));
+        v4Lock.withdrawTo(attacker);
         vm.expectRevert(abi.encodeWithSelector(Ownable.CallerNotOwner.selector, attacker));
         v4Lock.withdrawNft(address(v4), 0);
         vm.stopPrank();

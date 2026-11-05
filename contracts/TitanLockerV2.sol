@@ -351,14 +351,26 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   /// @dev Return the locked asset to the owner once the lock has matured.
   /// Vesting locks release via `release()` instead, so they are rejected here.
   function withdraw() external onlyOwner nonReentrant {
+    _withdraw(_owner());
+  }
+
+  /// @notice Return a matured lock's asset to an owner-chosen recipient. This
+  /// also lets a contract owner recover a position NFT when it cannot receive
+  /// ERC721 tokens itself.
+  function withdrawTo(address recipient_) external onlyOwner nonReentrant {
+    if (recipient_ == address(0)) revert ZeroAddress();
+    _withdraw(recipient_);
+  }
+
+  function _withdraw(address recipient_) private {
     if (_kind == ITitanLockerManagerV2.LockKind.ERC20_VESTING) revert WrongLockKind();
     if (uint40(block.timestamp) < _unlockTime) revert LockStillActive(_unlockTime);
 
     if (_kind == ITitanLockerManagerV2.LockKind.ERC20) {
-      IERC20(_asset).safeTransfer(_owner(), _heldBalance());
+      IERC20(_asset).safeTransfer(recipient_, _heldBalance());
       emit TokensWithdrawn();
     } else {
-      IERC721(_asset).safeTransferFrom(address(this), _owner(), _tokenId);
+      IERC721(_asset).safeTransferFrom(address(this), recipient_, _tokenId);
       emit PositionWithdrawn(_tokenId);
     }
   }

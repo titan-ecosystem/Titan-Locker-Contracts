@@ -54,6 +54,12 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
   /// @dev Lets the frontend search lockers by creator, locked token/position
   /// manager, locker address, or either underlying paired token.
   mapping(address => uint40[]) private _tokenLockersForAddress;
+  /// @dev One-based array positions make owner changes independent of the
+  /// length of an address's search bucket. A zero value means not indexed.
+  mapping(address => mapping(uint40 => uint256)) private _indexPositionPlusOne;
+  /// @dev Creator, asset, locker, and underlying-token indexes remain visible
+  /// even when one of those addresses ceases to own the lock.
+  mapping(address => mapping(uint40 => bool)) private _permanentIndex;
 
   /// @dev Allowlist of Uniswap position managers. `_pmKind` records whether a
   /// manager is V3- or V4-style; `_pmAllowed` gates whether new locks may use
@@ -278,15 +284,42 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
 
   /// @dev Records a new locker in the creator / asset / locker-address buckets.
   function _indexNewLocker(uint40 id_, address asset_, TitanLockerV2 locker_) private {
-    _tokenLockersForAddress[_msgSender()].push(id_);
-    _tokenLockersForAddress[asset_].push(id_);
-    _tokenLockersForAddress[address(locker_)].push(id_);
+    _indexStatic(id_, _msgSender());
+    _indexStatic(id_, asset_);
+    _indexStatic(id_, address(locker_));
   }
 
   /// @dev Records the lock under each underlying paired token, when present.
   function _indexUnderlying(uint40 id_, address token0_, address token1_) private {
-    if (token0_ != address(0)) _tokenLockersForAddress[token0_].push(id_);
-    if (token1_ != address(0)) _tokenLockersForAddress[token1_].push(id_);
+    if (token0_ != address(0)) _indexStatic(id_, token0_);
+    if (token1_ != address(0)) _indexStatic(id_, token1_);
+  }
+
+  function _indexStatic(uint40 id_, address account_) private {
+    _permanentIndex[account_][id_] = true;
+    _addIndex(id_, account_);
+  }
+
+  function _addIndex(uint40 id_, address account_) private {
+    if (_indexPositionPlusOne[account_][id_] != 0) return;
+    uint40[] storage ids = _tokenLockersForAddress[account_];
+    ids.push(id_);
+    _indexPositionPlusOne[account_][id_] = ids.length;
+  }
+
+  function _removeIndex(uint40 id_, address account_) private {
+    uint256 positionPlusOne = _indexPositionPlusOne[account_][id_];
+    if (positionPlusOne == 0) return;
+    uint40[] storage ids = _tokenLockersForAddress[account_];
+    uint256 index = positionPlusOne - 1;
+    uint256 last = ids.length - 1;
+    if (index != last) {
+      uint40 movedId = ids[last];
+      ids[index] = movedId;
+      _indexPositionPlusOne[account_][movedId] = positionPlusOne;
+    }
+    ids.pop();
+    delete _indexPositionPlusOne[account_][id_];
   }
 
   // --- reads ---
@@ -320,25 +353,16 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
     uint40 id_,
     address newOwner_,
     address previousOwner_,
-    address createdBy_
+    address /* createdBy_ */
   ) external override {
     if (_msgSender() != address(_tokenLockers[id_])) revert CallerIsNotLocker(id_, _msgSender());
 
-    if (previousOwner_ != createdBy_) {
-      uint40[] storage previousOwnerLocks = _tokenLockersForAddress[previousOwner_];
-      for (uint256 i = 0; i < previousOwnerLocks.length; i++) {
-        if (previousOwnerLocks[i] != id_) continue;
-        previousOwnerLocks[i] = previousOwnerLocks[previousOwnerLocks.length - 1];
-        previousOwnerLocks.pop();
-        break;
-      }
+    // The creator's permanent index was recorded at creation along with the
+    // other static roles. Keep the fourth ABI argument for child compatibility.
+    if (previousOwner_ != newOwner_ && !_permanentIndex[previousOwner_][id_]) {
+      _removeIndex(id_, previousOwner_);
     }
-
-    uint40[] storage newOwnerLocks = _tokenLockersForAddress[newOwner_];
-    for (uint256 i = 0; i < newOwnerLocks.length; i++) {
-      if (newOwnerLocks[i] == id_) return;
-    }
-    newOwnerLocks.push(id_);
+    _addIndex(id_, newOwner_);
   }
 
   // --- fee configuration ---

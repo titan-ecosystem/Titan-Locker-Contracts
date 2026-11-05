@@ -148,7 +148,7 @@ async function main() {
     check(owner === expectedOwner, "deployed owner differs from manifest");
     check(receiver === expectedReceiver, "deployed fee receiver differs from manifest");
     check(nativeFee.eq(nativeFeeWei), "deployed native fee differs from manifest");
-    check(tokenFee.toNumber() === tokenFeeBps, "deployed token fee differs from manifest");
+    check(Number(tokenFee) === tokenFeeBps, "deployed token fee differs from manifest");
     check(enabled, "new lock creation is disabled");
     for (const account of feeExemptAccounts) {
       check(await manager.isExemptFromFees(account), `fee exemption missing: ${account}`);

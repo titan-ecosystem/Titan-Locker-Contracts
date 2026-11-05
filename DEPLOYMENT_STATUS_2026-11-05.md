@@ -27,31 +27,41 @@ bytecode comparison and local fork tests are the verification completed here.
 
 ## Kinetiq Elysium (99901)
 
-The parent HyperEVM wallet was funded and the regular-locker preflight passed.
-The `Util` creation transaction was posted to the official Inbox
-`0xce59f8B65ad41C9DAE4c07A0571a39824bD92cff` on HyperEVM (999):
+The regular manager is deployed on Elysium at
+`0x713E56CeE7060F01F710bF26Aff988264dcfb311` and `Util` is deployed at
+`0x772279251b563028a32cD1505e3F2f8485C746D9`. These addresses coincide with
+older Robinhood addresses because the same wallet used the same creation nonces;
+the deployments are on separate chains and contain different code. The Elysium
+manager's 23,404-byte runtime matches its linked release artifact exactly
+(hash `0xeb3de44c35d8052c5de107355cf6d825d2b6a5cfb6ae6c927ee5f06630ee4fcc`).
 
-- Parent transaction (confirmed successfully):
-  [`0x114e9e216a9e386890250df4c1f47ceb9a944f130bf8275623bdb5a114856ba7`](https://hyperevmscan.io/tx/0x114e9e216a9e386890250df4c1f47ceb9a944f130bf8275623bdb5a114856ba7)
-- Signed child transaction hash (no Elysium receipt as of this report):
-  `0x05f8b90cebf86a39abd9073c225699dca63c955fb41ae34b8ab1784a845a5def`
+The manager owner and fee receiver are both
+`0x5C773302FBEED11fA59a6939f0354678738B02DB`. Creation is enabled with a
+1 HYPE flat fee or 500 bps token fee. All five corrected deployment and
+configuration steps have successful parent and child receipts:
 
-The script stopped after 20 minutes without a child receipt. It did **not** post
-the manager deployment or fee/configuration transactions. The Inbox message has
-delayed-message index 610,575. The SequencerInbox initially lagged but later
-advanced past this index, while the Elysium wallet nonce remained zero and no
-library code appeared. Inspection found that our deployment script sent bare
-signed transaction bytes beginning with `0x02`. Nitro requires a `0x04`
-signed-message type byte before those bytes. The message was therefore consumed
-without executing the transaction. The deployment script now uses the required
-prefix. The local `.elysium-inbox-state.json` (mode 0600, gitignored) retains the
-failed parent and child hashes for reconciliation before a corrected retry.
+| Step | HyperEVM Inbox transaction | Elysium transaction |
+|---|---|---|
+| Util | `0x494d02bdcbb7d42f77461493a86773713afa31797261ea2b210cceb24ec1a2e8` | `0xff71c4836ebf0f4027e54ceff260c82182a1395abee1368c6de67588f030accf` |
+| Manager | `0x449b55386af48b3f8ad1848fd4744d09893e88d2833f8d272bb836af058eff7e` | `0x3084a4ba97b13e91762ea510543180d216e32091dc44a68f9a3030a82c9e30ea` |
+| Disable creation | `0x301780b98a688eb3a5cd283a8f7431fcf1231431e689548422af8fb52319f298` | `0x57539e648bbc239460099ce5403f0ea80f74ee75429c46eca64791311b10fc75` |
+| Set native fee | `0x96be7e5baba49138a91bf85829776926ae500a584a419bec4492cce9fb6bedc7` | `0x53c64719adfdd81e893d6aea28c2e7c94b91fe6f1515bd381632bbc09c52809f` |
+| Enable creation | `0x1b7f319ebba318abefe9121ed664e4d9165fb33d45fc39bd9a3269ffc407f789` | `0x04d75d76efb385da56011c4d5ffd359ce74ab793589a61d2ac8f1df818d07101` |
+
+The first Inbox attempt, parent transaction
+[`0x114e9e216a9e386890250df4c1f47ceb9a944f130bf8275623bdb5a114856ba7`](https://hyperevmscan.io/tx/0x114e9e216a9e386890250df4c1f47ceb9a944f130bf8275623bdb5a114856ba7),
+was consumed without execution because our script omitted Nitro's `0x04`
+signed-message prefix. It did not use a child nonce or deploy code. The script
+was fixed and tested before the successful retry. The local gitignored state
+file records the attempt and all successful hashes.
 
 Elysium's approved LP position-manager list remains empty. The supplied official
 addresses identify the rollup, Inbox, Bridge, and token gateways; none is a V3
-or V4 LP position NFT manager. The regular locker can support ERC-20 locks and
-vesting once its manager is deployed, but LP position creation remains disabled
-until an actual position-manager contract is verified and allowlisted.
+or V4 LP position NFT manager. ERC-20 locking and vesting are available at the
+contract level, but LP position creation remains disabled until an actual
+position-manager contract is verified and allowlisted. The Titan app still
+requires Elysium integration, and a real production lock and withdrawal cycle
+against this manager has not yet been completed.
 
 No finite audit or test suite can establish that a contract has zero bugs. This
 release status records the checks performed and the remaining deployment gaps.

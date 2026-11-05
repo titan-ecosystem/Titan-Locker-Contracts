@@ -156,6 +156,18 @@ format is different. All four additions passed local Robinhood fork tests for
 NFT custody, fee claiming, and maturity withdrawal. All four are now
 allowlisted on the new manager; see [ALLOWLIST.md](./ALLOWLIST.md).
 
+**Kinetiq Elysium** (chain ID `99901`; parent HyperEVM `999`)
+
+The regular locker manager is deployed at
+`0x713E56CeE7060F01F710bF26Aff988264dcfb311` with `Util` at
+`0x772279251b563028a32cD1505e3F2f8485C746D9`. It was submitted through
+the official HyperEVM Inbox, and its runtime matches the linked release artifact.
+The configured fee is 1 HYPE flat or 5% of deposited tokens. No LP position
+manager is allowlisted on Elysium; the addresses supplied for the rollup and
+token bridge are not LP position NFT managers. Contract deployment is complete,
+but Titan app integration and a real production lock cycle remain pending. See
+[deployment status](./DEPLOYMENT_STATUS_2026-11-05.md).
+
 **Stable Chain** (chain ID `988`) — **retired 9 October 2026**
 
 Titan Locker and titan.fun no longer offer new Stable Chain locks or launches in their interfaces. The contracts and existing locks are immutable: owners can still withdraw regular locks when their unlock times arrive, and legacy lock certificates remain verifiable on [Stablescan](https://stablescan.xyz). The addresses below are historical references, not current deployment targets. The former [Titan Vault](https://stablescan.xyz/address/0xc44cE9f3E9c7F34CAE0f7418979e70565DbE4b1d) continues to hold permanently locked Stable Chain launch liquidity. See the [current contract directory](https://titanlocker.com/docs/contracts) for the supported chain and retired addresses.

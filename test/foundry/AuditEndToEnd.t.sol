@@ -253,6 +253,12 @@ contract AuditEndToEnd is Test {
         (fee0, fee1) = locker.collectFees();
         assertEq(fee0, 2 ether);
         assertEq(fee1, 1 ether);
+        pm.setOwed(id, 1 ether, 2 ether);
+        (fee0, fee1) = locker.collectFeesTo(bob);
+        assertEq(fee0, 1 ether);
+        assertEq(fee1, 2 ether);
+        assertEq(token0.balanceOf(bob), 1 ether);
+        assertEq(token1.balanceOf(bob), 2 ether);
         vm.expectRevert(abi.encodeWithSelector(TitanLockerV2.LockStillActive.selector, uint40(200)));
         locker.withdraw();
         vm.warp(200);

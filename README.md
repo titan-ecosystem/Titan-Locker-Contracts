@@ -147,8 +147,12 @@ additions (open a PR) are documented in **[ALLOWLIST.md](./ALLOWLIST.md)**. On
 Robinhood Chain (4663) the canonical managers are Uniswap v3
 `NonfungiblePositionManager` [`0x73991a25…DE0D3`](https://robinhoodchain.blockscout.com/address/0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3)
 and v4 `PositionManager` [`0x58daec31…04fa7`](https://robinhoodchain.blockscout.com/address/0x58daec3116aae6d93017baaea7749052e8a04fa7).
-The V4 fee-collection path should be fork-validated against the real `PositionManager`
-before allowlisting in production.
+The proposed V2.2 release also supports SushiSwap V3, PancakeSwap V3,
+SushiSwap V4 CL, and PancakeSwap Infinity CL. The two CL managers use the
+`INFINITY_CL` kind (4), not Uniswap's `UNIV4` kind (2): their pool-key return
+format is different. All four additions passed local Robinhood fork tests for
+NFT custody, fee claiming, and maturity withdrawal. They are not yet deployed
+or allowlisted on the new manager; see [ALLOWLIST.md](./ALLOWLIST.md).
 
 **Stable Chain** (chain ID `988`) — **retired 9 October 2026**
 

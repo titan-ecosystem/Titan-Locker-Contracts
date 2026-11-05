@@ -109,7 +109,7 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
 
   function setPositionManager(address positionManager_, LockKind kind_, bool allowed_) external override onlyOwner {
     if (positionManager_ == address(0)) revert ZeroAddress();
-    if (kind_ != LockKind.UNIV3 && kind_ != LockKind.UNIV4) revert InvalidPositionManagerKind();
+    if (kind_ != LockKind.UNIV3 && kind_ != LockKind.UNIV4 && kind_ != LockKind.INFINITY_CL) revert InvalidPositionManagerKind();
     _pmKind[positionManager_] = kind_;
     _pmAllowed[positionManager_] = allowed_;
     emit PositionManagerSet(positionManager_, kind_, allowed_);

@@ -55,13 +55,26 @@ signed-message prefix. It did not use a child nonce or deploy code. The script
 was fixed and tested before the successful retry. The local gitignored state
 file records the attempt and all successful hashes.
 
-Elysium's approved LP position-manager list remains empty. The supplied official
-addresses identify the rollup, Inbox, Bridge, and token gateways; none is a V3
-or V4 LP position NFT manager. ERC-20 locking and vesting are available at the
-contract level, but LP position creation remains disabled until an actual
-position-manager contract is verified and allowlisted. The Titan app still
-requires Elysium integration, and a real production lock and withdrawal cycle
-against this manager has not yet been completed.
+The user subsequently supplied Elysium's Uniswap V3 Positions NFT
+`0xF025e0Fe9E331A0eF05c2ad3C4E9C64b625cda6f` and V4 Position Manager
+`0x1d1C51b9d07fD27d36412A2b66CC23D19Eb3E518`. Before allowlisting, their
+runtime hashes, ERC-721 interfaces, NFT symbols, and linked V3 factory/V4
+PoolManager were checked on chain. A fixed-block Elysium fork test using real
+positions (block 701402, Cancun EVM) passed custody, fee collection, early
+withdrawal rejection, and maturity withdrawal for both managers. The user-supplied
+routers, quoters, PoolManager, and bridge contracts were not allowlisted.
+
+Both owner transactions were posted through the official HyperEVM Inbox and
+confirmed on Elysium. The final on-chain mapping reads `UNIV3`/allowed for the V3
+Positions NFT and `UNIV4`/allowed for the V4 Position Manager:
+
+| Manager | HyperEVM Inbox transaction | Elysium transaction |
+|---|---|---|
+| Uniswap V3 | [`0xf55c…b65e`](https://hyperevmscan.io/tx/0xf55c1418ffa16ab17f13b1343acf7412ef7811eaeb68469b41176565e664b65e) | `0xfc966d2aa5e2138426f7425e0ccfc3937e99fea6971d2527f8c68d76c38b2fc7` |
+| Uniswap V4 | [`0xd19d…559d`](https://hyperevmscan.io/tx/0xd19d0f8a98a9706b406ccaea5fd89f89770c4b4e45d4c2e61152dff5d717559d) | `0x66199997b0fc5110f8738f3dc43c405e474c3c6e5dd91092a1454000a3eda66b` |
+
+The Titan app still requires Elysium integration, and a real production lock and
+withdrawal cycle against this manager has not yet been completed.
 
 No finite audit or test suite can establish that a contract has zero bugs. This
 release status records the checks performed and the remaining deployment gaps.

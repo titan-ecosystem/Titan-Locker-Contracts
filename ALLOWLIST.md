@@ -76,10 +76,17 @@ cast send "$V2" "setPositionManager(address,uint8,bool)" <POSITION_MANAGER> <KIN
 ### Kinetiq Elysium — chain id `99901`
 
 The regular manager at `0x713E56CeE7060F01F710bF26Aff988264dcfb311`
-has no LP position manager allowlisted. The official rollup, Inbox, Bridge, and
-token-gateway addresses are infrastructure contracts, not V3/V4 position NFT
-managers. ERC-20 locking and vesting can use the deployed manager; LP position
-locking requires a separately verified position manager.
+allowlists these two user-supplied Uniswap position NFT managers. Both passed
+live code-hash, ERC-721, linked-contract, and real-position fork checks for
+custody, fee collection, and maturity withdrawal before configuration:
+
+| Protocol | Kind | Position manager | HyperEVM Inbox transaction |
+|---|---|---|---|
+| Uniswap V3 | `UNIV3` | `0xF025e0Fe9E331A0eF05c2ad3C4E9C64b625cda6f` | [`0xf55c…b65e`](https://hyperevmscan.io/tx/0xf55c1418ffa16ab17f13b1343acf7412ef7811eaeb68469b41176565e664b65e) |
+| Uniswap V4 | `UNIV4` | `0x1d1C51b9d07fD27d36412A2b66CC23D19Eb3E518` | [`0xd19d…559d`](https://hyperevmscan.io/tx/0xd19d0f8a98a9706b406ccaea5fd89f89770c4b4e45d4c2e61152dff5d717559d) |
+
+The rollup, Inbox, Bridge, and token gateways are infrastructure contracts, not
+position NFT managers. Uniswap V2 LP tokens use the regular ERC-20 lock path.
 
 ---
 

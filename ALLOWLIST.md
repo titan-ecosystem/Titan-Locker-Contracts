@@ -56,7 +56,7 @@ the proposed V2.2 manager only. The release script is
 | SushiSwap V4 CL | `INFINITY_CL` | [`0xd3d35fBc4E44523CA3cD383C1948322Ddb42F644`](https://robinhoodchain.blockscout.com/address/0xd3d35fBc4E44523CA3cD383C1948322Ddb42F644) | Fork tested; pending V2.2 deployment |
 | PancakeSwap Infinity CL | `INFINITY_CL` | [`0xeaEA9253A0b75B936a965DbD35B2a3F01831DE74`](https://robinhoodchain.blockscout.com/address/0xeaEA9253A0b75B936a965DbD35B2a3F01831DE74) | Fork tested; pending V2.2 deployment |
 
-The [SushiSwap V4 CL manifest](https://github.com/sushi-labs/infinity-deployments/blob/main/chains/robinhood-mainnet.json) and PancakeSwap's official [V3](https://github.com/pancakeswap/pancake-developer/blob/master/docs/pages/contracts/v3/addresses.md) and [Infinity](https://github.com/pancakeswap/pancake-developer/blob/master/docs/pages/contracts/infinity/resources/addresses.mdx) tables identify these position managers.
+SushiSwap's official [V3 configuration](https://github.com/sushi-labs/sushi/blob/3f6938e2970c3f930b9dfd522a0846258eed0ba8/src/evm/config/features/sushiswap-v3.ts) and [V4 CL deployment manifest](https://github.com/sushi-labs/infinity-deployments/blob/main/chains/robinhood-mainnet.json), and PancakeSwap's official [V3](https://github.com/pancakeswap/pancake-developer/blob/master/docs/pages/contracts/v3/addresses.md) and [Infinity](https://github.com/pancakeswap/pancake-developer/blob/master/docs/pages/contracts/infinity/resources/addresses.mdx) tables identify these position managers.
 
 > Source of truth is always the on-chain state: read `positionManagerKind(pm)` on the
 > manager. This table is a human-readable mirror. When the owner sends the allowlist

@@ -19,7 +19,7 @@ contains the handover fix and remains unmerged pending this release review.
 |---|---|---|---|
 | Uniswap V3 | `0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3` | `UNIV3` (1) | Existing integration; on-chain code present |
 | Uniswap V4 | `0x58daec3116aae6d93017baaea7749052e8a04fa7` | `UNIV4` (2) | Existing integration; on-chain code present |
-| SushiSwap V3 | `0x51d0e5188afe12d502e29D982d20C190e7816107` | `UNIV3` (1) | NFT name/factory/code checked; real NFT fork test |
+| SushiSwap V3 | `0x51d0e5188afe12d502e29D982d20C190e7816107` | `UNIV3` (1) | [Official V3 configuration](https://github.com/sushi-labs/sushi/blob/3f6938e2970c3f930b9dfd522a0846258eed0ba8/src/evm/config/features/sushiswap-v3.ts), NFT name/factory/code checked; real NFT fork test |
 | PancakeSwap V3 | `0x46A15B0b27311cedF172AB29E4f4766fbE7F4364` | `UNIV3` (1) | [Official address list](https://github.com/pancakeswap/pancake-developer/blob/master/docs/pages/contracts/v3/addresses.md), factory/code checked; real NFT fork test |
 | SushiSwap V4 CL | `0xd3d35fBc4E44523CA3cD383C1948322Ddb42F644` | `INFINITY_CL` (4) | [Official deployment manifest](https://github.com/sushi-labs/infinity-deployments/blob/main/chains/robinhood-mainnet.json), code/pool-manager checked; real NFT fork test |
 | PancakeSwap Infinity CL | `0xeaEA9253A0b75B936a965DbD35B2a3F01831DE74` | `INFINITY_CL` (4) | [Official address list](https://github.com/pancakeswap/pancake-developer/blob/master/docs/pages/contracts/infinity/resources/addresses.mdx), code/pool-manager checked; real NFT fork test |

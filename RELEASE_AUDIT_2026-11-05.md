@@ -5,8 +5,8 @@
 **Do not deploy or announce production readiness yet.** This review found no
 unresolved direct drain of a lock in the new code under the tested assumptions,
 but that is not a zero-vulnerability guarantee. The new Sushi/Pancake CL adapter
-and release scripts still need an independent security review and a final
-deployment rehearsal. Existing immutable Robinhood V1/V2.1 locks have separate
+  and release scripts still need an independent security review. Existing
+  immutable Robinhood V1/V2.1 locks have separate
 legacy risks that a new manager cannot fix.
 
 No live transaction was sent during this review. GitHub PRs #3 and #4 are
@@ -64,9 +64,20 @@ numbers. V2/V2.1 deployed contracts do not gain this feature.
   dynamic arrays, and ignored tuple fields. Aderyn 0.1.9 crashed while
   resolving this repository (`StripPrefixError`), so it did not provide an
   independent result for this revision.
+- GitHub displayed 53 dependency alerts on the default branch during the
+  draft-PR push. A local `yarn audit` of the checked-in lockfile reported
+  147 advisories (2 critical). Both critical advisories are in the
+  `solidity-coverage > sc-istanbul > handlebars` test-coverage path, not
+  deployed contract bytecode. The other advisories still need toolchain
+  triage before using the release scripts with a funded private key.
 - Compiled runtime sizes: manager 22,898 bytes; child locker 12,500 bytes,
   both below the EIP-170 24,576-byte limit. JavaScript release scripts pass
-  syntax checks; the release action paths have not been used on a live chain.
+  syntax checks. A local Anvil Robinhood fork rehearsal deployed Util and V2.2,
+  configured the approved 0.025 ETH / 3% fees and all six managers, and checked
+  an ERC-20 lock's custody, early-exit rejection, and matured withdrawal. The
+  manager's local runtime bytecode exactly matched the compiled artifact after
+  substituting the linked Util address. Temporary fork records were removed.
+  The release action paths have not been used on a live chain.
 
 The fork must use Cancun execution rules. Initial tests under the repository's
 London compiler target produced a Pancake token-transfer revert and could not
@@ -80,10 +91,15 @@ with executing it on a Cancun chain.
 1. Obtain independent review of the newly added CL adapter, recipient-choice
    fee claim, and deployment/configuration scripts. The tests establish known
    cases, not absence of all vulnerabilities.
-2. Rehearse V2.2 deployment/configuration on a current Robinhood fork, verify
-   the resulting manager and child runtime bytecode, fee receiver, 0.025 ETH
-   flat fee, 3% token fee, and all six allowlist entries before any live use.
-   The new scripts are gated and have not sent transactions.
+2. Verify the production manager and child runtime bytecode, fee receiver,
+   0.025 ETH flat fee, 3% token fee, and all six allowlist entries after an
+   approved live deployment, before public use. The local rehearsal has
+   verified the manager bytecode, fees, and allowlist; child runtime bytecode
+   was not compared byte for byte because child immutables differ per lock.
+   The new scripts are gated and have not sent live transactions. Review or
+   isolate the vulnerable Yarn toolchain before using it with the
+   production deployer key; the critical Handlebars path is test-only, while
+   other high-severity advisories touch packages used by release tooling.
 3. Confirm the product UI and docs accept kind 4 and display the four new
    position managers correctly. The contracts alone do not change the UI.
 4. Decide how to handle live legacy managers. Robinhood V1 creation remains

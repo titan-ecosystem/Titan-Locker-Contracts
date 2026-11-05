@@ -162,10 +162,11 @@ The regular locker manager is deployed at
 `0x713E56CeE7060F01F710bF26Aff988264dcfb311` with `Util` at
 `0x772279251b563028a32cD1505e3F2f8485C746D9`. It was submitted through
 the official HyperEVM Inbox, and its runtime matches the linked release artifact.
-The configured fee is 1 HYPE flat or 5% of deposited tokens. No LP position
-manager is allowlisted on Elysium; the addresses supplied for the rollup and
-token bridge are not LP position NFT managers. Contract deployment is complete,
-but Titan app integration and a real production lock cycle remain pending. See
+The configured fee is 1 HYPE flat or 5% of deposited tokens. The Uniswap V3
+Positions NFT and V4 Position Manager are allowlisted for LP position locks;
+the rollup and token-bridge addresses are separate infrastructure contracts.
+Contract deployment is complete, but Titan app integration and a real production
+lock cycle remain pending. See
 [deployment status](./DEPLOYMENT_STATUS_2026-11-05.md).
 
 **Stable Chain** (chain ID `988`) — **retired 9 October 2026**

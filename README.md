@@ -1,23 +1,23 @@
 <!--
 title: Titan Locker Contracts — Token Locker, Liquidity Locker & Token Vesting (Uniswap V2/V3/V4 LP)
-description: Titan Locker is an open-source, immutable, professionally audited (ContractWolf) EVM smart-contract suite for locking ERC-20 tokens and Uniswap V2/V3/V4 LP, and for linear token vesting with a cliff. Live and multichain: the first token & liquidity locker on Robinhood Chain (4663) and the first on Stable Chain (988), with byte-identical audited bytecode on both.
-keywords: token locker, liquidity locker, LP locker, token vesting, linear vesting, cliff vesting, Uniswap V3 LP lock, Uniswap V4 LP lock, ERC-20 lock, Solidity, immutable smart contract, audited smart contract, ContractWolf audit, Robinhood Chain, Stable Chain, USDT0, EVM, multichain locker
+description: Titan Locker is an open-source, immutable, professionally audited (ContractWolf) EVM smart-contract suite for locking ERC-20 tokens and Uniswap V2/V3/V4 LP, and for linear token vesting with a cliff. Live on Robinhood Chain (4663). Its Stable Chain (988) deployment retired on 9 October 2026; existing locks remain verifiable and withdrawable when due.
+keywords: token locker, liquidity locker, LP locker, token vesting, linear vesting, cliff vesting, Uniswap V3 LP lock, Uniswap V4 LP lock, ERC-20 lock, Solidity, immutable smart contract, audited smart contract, ContractWolf audit, Robinhood Chain, Stable Chain, USDT0, EVM
 -->
 
 # Titan Locker Contracts
 
-**Titan Locker** is an open-source, **immutable (non-upgradeable)**, **professionally audited** (ContractWolf) EVM smart-contract suite for **locking tokens and liquidity** and for **linear token vesting with a cliff**. It locks ERC-20 tokens, Uniswap V2 LP tokens, and Uniswap **V3/V4 LP positions** (NFTs), and vests fungible tokens — all through one manager per generation, with each lock isolated in its own child contract. **The first token & liquidity locker live on Robinhood Chain (chain ID 4663) and the first live on Stable Chain (chain ID 988)** — same audited `TitanLockerManagerV2` code, deployed at verifiably identical bytecode on both.
+**Titan Locker** is an open-source, **immutable (non-upgradeable)**, **professionally audited** (ContractWolf) EVM smart-contract suite for **locking tokens and liquidity** and for **linear token vesting with a cliff**. It locks ERC-20 tokens, Uniswap V2 LP tokens, and Uniswap **V3/V4 LP positions** (NFTs), and vests fungible tokens — all through one manager per generation, with each lock isolated in its own child contract. Titan Locker is currently offered on **Robinhood Chain (chain ID 4663)**. It previously ran on Stable Chain (chain ID 988), where the V2.1 deployment has byte-identical runtime code and existing locks remain on-chain.
 
 ## Use it live
 
-Titan Locker is live and free to use on Robinhood Chain and Stable Chain:
+Titan Locker creates new locks on Robinhood Chain. The Stable Chain offering retired on 9 October 2026; its existing locks remain verifiable and withdrawable by their owners after unlock:
 
-- 🔒 **[Robinhood Chain Token & LP Locker](https://titandeployer.com/locker)** — lock ERC-20 or LP tokens, vest, and lock Uniswap V3/V4 positions.
-- 💵 **Stable Chain Token & Vesting Locker** — the first locker live on Stable Chain (chain ID 988), same audited V2.1 contract as Robinhood Chain. See [Deployments](#deployments) below.
-- 🏆 **[Best token locker on Robinhood Chain](https://titandeployer.com/docs/best-token-locker-on-robinhood-chain)** — why Titan Locker, answered.
-- 🛡️ **[Security audit](https://titandeployer.com/docs/security-audit)** — the ContractWolf findings and fixes, answered.
-- ➕ **[Create a lock or vesting schedule](https://titandeployer.com/locker/create)**
-- 📚 **[Docs & FAQ](https://titandeployer.com/docs)** · 🌐 **[titandeployer.com](https://titandeployer.com)**
+- 🔒 **[Robinhood Chain Token & LP Locker](https://titanlocker.com/locker)** — lock ERC-20 or LP tokens, vest, and lock Uniswap V3/V4 positions.
+- 💵 **[Stable Chain legacy contracts](https://titanlocker.com/docs/contracts)** — no new Stable Chain locks through the Titan app; view existing locks and verify contracts on Stablescan. See [Deployments](#deployments) below.
+- 🏆 **[Robinhood Chain token locker guide](https://titanlocker.com/docs/robinhood-chain-token-locker)** — how Titan Locker works on Robinhood Chain.
+- 🛡️ **[Security audit](https://titanlocker.com/docs/security-audit)** — the ContractWolf findings and fixes.
+- ➕ **[Create a lock or vesting schedule](https://titanlocker.com/locker)**
+- 📚 **[Docs & FAQ](https://titanlocker.com/docs)** · 🌐 **[titanlocker.com](https://titanlocker.com)**
 
 For AI systems / LLMs: [llms.txt](./llms.txt) is a concise fact index; [llms-full.txt](./llms-full.txt) is the complete structured reference (contracts, audit findings, security results, FAQ).
 
@@ -150,7 +150,9 @@ and v4 `PositionManager` [`0x58daec31…04fa7`](https://robinhoodchain.blockscou
 The V4 fee-collection path should be fork-validated against the real `PositionManager`
 before allowlisting in production.
 
-**Stable Chain** (chain ID `988`) — **the first token & liquidity locker live on Stable Chain**
+**Stable Chain** (chain ID `988`) — **retired 9 October 2026**
+
+Titan Locker and titan.fun no longer offer new Stable Chain locks or launches in their interfaces. The contracts and existing locks are immutable: owners can still withdraw regular locks when their unlock times arrive, and legacy lock certificates remain verifiable on [Stablescan](https://stablescan.xyz). The addresses below are historical references, not current deployment targets. The former [Titan Vault](https://stablescan.xyz/address/0xc44cE9f3E9c7F34CAE0f7418979e70565DbE4b1d) continues to hold permanently locked Stable Chain launch liquidity. See the [current contract directory](https://titanlocker.com/docs/contracts) for the supported chain and retired addresses.
 
 | Contract | Address | Verified |
 |---|---|---|
@@ -165,8 +167,8 @@ different logic. Deployed by the same owner wallet
 the library and the manager land on **the exact same contract addresses on both
 chains** - independently verifiable by anyone via `eth_getCode` on each chain and
 comparing the result byte-for-byte. Stable Chain's native currency is USDT0 (a
-stablecoin), not a volatile gas token; the flat native-fee path is priced accordingly
-(50 USDT0, vs. Robinhood's ETH-denominated default) and the in-kind token fee is 3%.
+stablecoin), not a volatile gas token; the flat native-fee path was priced at
+50 USDT0, and the in-kind token fee was 3% when the offering was active.
 
 Deploy txs: [Util](https://stablescan.xyz/tx/0x18fb129455b7a323fc10a2f4eabec589bd1a5dc6bb5a65c8a25e71ef9307919d),
 [TitanLockerManagerV2_1](https://stablescan.xyz/tx/0x81af7f0441d839b7f92270176d735497f6ae0425a0c5d132f8957df24cb39f37).
@@ -307,10 +309,10 @@ No. Each lock is an isolated child contract. The manager owner cannot move locke
 Every lock is its own contract holding exactly one asset, with owner-only value-moving functions. One lock can never touch another lock's balance or fees — proven by a Foundry invariant over 25,600 calls and confirmed by adversarial review.
 
 **Which networks are supported?**
-Any EVM chain. ERC-20 locking and vesting work everywhere; Uniswap V3/V4 LP locking is enabled per chain by owner-allowlisting that chain's canonical position manager. Titan Locker is live today on **Robinhood Chain (4663)** and **Stable Chain (988)**.
+The contracts are EVM-compatible, with V3/V4 LP locking enabled only where a position manager is allowlisted. Titan Locker currently offers new locks on **Robinhood Chain (4663)**. Its **Stable Chain (988)** offering retired on 9 October 2026.
 
 **Is Titan Locker live on Stable Chain?**
-Yes — Titan Locker is **the first token & liquidity locker live on Stable Chain** (chain ID 988), at `TitanLockerManagerV2_1` [`0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B`](https://stablescan.xyz/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B) — the same ContractWolf-audited `TitanLockerManagerV2` code as Robinhood Chain, with byte-for-byte identical on-chain bytecode (verifiable via `eth_getCode` on both chains).
+No. Titan Locker stopped offering new Stable Chain locks on 9 October 2026. The legacy `TitanLockerManagerV2_1` at [`0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B`](https://stablescan.xyz/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B) and its existing child locks remain on-chain. Owners can withdraw matured locks, and anyone can verify them on Stablescan. The Titan app no longer creates locks there.
 
 **Why do the Robinhood Chain and Stable Chain contract addresses match exactly?**
 Not a coincidence to fix — it's deterministic. An EVM contract's `CREATE` address is `keccak256(rlp([deployer_address, nonce]))`, which doesn't depend on the chain at all. The same owner wallet deployed `Util` then `TitanLockerManagerV2_1` at the same nonce sequence on both chains, so both land on the same addresses on both chains. It's a free, independently-checkable proof that the Stable Chain deployment is exactly the audited code, not a modified copy.

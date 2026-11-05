@@ -160,6 +160,24 @@ contract MaliciousV4HookTest is Test {
         assertEq(pm.ownerOf(1), address(locker));
     }
 
+    function testOwnerChosenRecipientDoesNotGiveHookControlOfFees() public {
+        address recipient = address(0xB0B);
+        vm.prank(address(0xBAD));
+        vm.expectRevert();
+        locker.collectFeesTo(recipient);
+        vm.expectRevert();
+        locker.collectFeesTo(address(0));
+        (uint256 paid0, uint256 paid1) = locker.collectFeesTo(recipient);
+        assertEq(paid0, 4 ether);
+        assertEq(paid1, 7 ether);
+        assertEq(token0.balanceOf(recipient), 4 ether);
+        assertEq(token1.balanceOf(recipient), 7 ether);
+        assertEq(pm.ownerOf(1), address(locker));
+        assertTrue(hook.collectBlocked());
+        assertTrue(hook.withdrawBlocked());
+        assertTrue(hook.nftRescueBlocked());
+    }
+
     function testHookCanVetoFeeClaimButCannotVetoMaturedNftWithdrawal() public {
         hook.setBlockClaims(true);
         vm.expectRevert(bytes("hook veto"));

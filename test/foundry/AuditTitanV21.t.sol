@@ -122,6 +122,7 @@ contract AuditTitanV21 is Test {
         vm.expectRevert(HookDataRequiredPositionManager.HookDataMissing.selector);
         locker.collectFees();
         locker.collectFeesWithHookData(hex"01");
+        locker.collectFeesToWithHookData(address(0xB0B), hex"01");
         assertTrue(pm.claimed());
 
         vm.warp(201);

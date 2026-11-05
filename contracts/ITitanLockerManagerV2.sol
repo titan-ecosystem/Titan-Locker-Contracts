@@ -14,10 +14,10 @@ pragma solidity 0.8.30;
 interface ITitanLockerManagerV2 {
   /// @notice What a lock holds and how it releases. ERC20 covers plain tokens
   /// and V2-style LP tokens (which are themselves ERC20), released 100% at
-  /// `unlockTime`. UNIV3/UNIV4 are ERC721 LP positions. ERC20_VESTING is a
+  /// `unlockTime`. UNIV3/UNIV4/INFINITY_CL are ERC721 LP positions. ERC20_VESTING is a
   /// fungible grant released linearly (with an optional cliff) between `start`
   /// and `end`. Appended in order, so existing values keep their numbers.
-  enum LockKind { ERC20, UNIV3, UNIV4, ERC20_VESTING }
+  enum LockKind { ERC20, UNIV3, UNIV4, ERC20_VESTING, INFINITY_CL }
 
   event TokenLockerCreated(
     uint40 id,
@@ -110,7 +110,7 @@ interface ITitanLockerManagerV2 {
   function positionManagerKind(address positionManager_) external view returns (LockKind kind, bool allowed);
 
   /// @dev Allowlist (or update/remove) a position manager. `kind_` must be
-  /// UNIV3 or UNIV4. Set `allowed_` false to disable it for new locks.
+  /// UNIV3, UNIV4, or INFINITY_CL. Set `allowed_` false to disable it for new locks.
   function setPositionManager(address positionManager_, LockKind kind_, bool allowed_) external;
 
   // --- reads ---

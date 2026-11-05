@@ -64,6 +64,12 @@ module.exports = {
     localhost: {
       url: "http://localhost:8545",
     },
+    "robinhood-fork": {
+      // Local Anvil fork for release rehearsals. Never points at a live RPC.
+      url: "http://127.0.0.1:8545",
+      chainId: 4663,
+      accounts: deployerAccounts(),
+    },
     eth: {
       url: "https://rpc.ankr.com/eth",
       accounts: deployerAccounts(),

@@ -15,10 +15,12 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import { ITitanLockerManagerV2 } from "./ITitanLockerManagerV2.sol";
 import { INonfungiblePositionManagerV3 } from "./interfaces/INonfungiblePositionManagerV3.sol";
 import { IPositionManagerV4, PoolKeyV4, ActionsV4 } from "./interfaces/IPositionManagerV4.sol";
+import { IInfinityCLPositionManager, PoolKeyInfinity } from "./interfaces/IInfinityCLPositionManager.sol";
 import { Ownable } from "./Ownable.sol";
 import { Util } from "./Util.sol";
 
@@ -125,7 +127,8 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   modifier onlyPosition() {
     if (
       _kind != ITitanLockerManagerV2.LockKind.UNIV3 &&
-      _kind != ITitanLockerManagerV2.LockKind.UNIV4
+      _kind != ITitanLockerManagerV2.LockKind.UNIV4 &&
+      _kind != ITitanLockerManagerV2.LockKind.INFINITY_CL
     ) revert WrongLockKind();
     _;
   }
@@ -198,6 +201,14 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
       }
     }
 
+    if (_kind == ITitanLockerManagerV2.LockKind.INFINITY_CL) {
+      try IInfinityCLPositionManager(_asset).getPoolAndPositionInfo(_tokenId) returns (PoolKeyInfinity memory key, uint256) {
+        return (true, key.currency0, key.currency1);
+      } catch {
+        return (false, address(0), address(0));
+      }
+    }
+
     // UNIV4
     try IPositionManagerV4(_asset).getPoolAndPositionInfo(_tokenId) returns (PoolKeyV4 memory key, uint256) {
       return (true, key.currency0, key.currency1);
@@ -239,18 +250,31 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   /// is the whole point of locking an LP position. Touches only this lock's own
   /// immutable `_tokenId`, so it can never reach another lock's fees.
   function collectFees() external onlyOwner onlyPosition nonReentrant returns (uint256 amount0, uint256 amount1) {
-    return _collectFees(bytes(""));
+    return _collectFees(_owner(), bytes(""));
+  }
+
+  /// @notice Collect fees for this position to an owner-chosen recipient.
+  /// Useful when a contract owns the lock but cannot receive native currency.
+  function collectFeesTo(address recipient_) external onlyOwner onlyPosition nonReentrant returns (uint256 amount0, uint256 amount1) {
+    if (recipient_ == address(0)) revert ZeroAddress();
+    return _collectFees(recipient_, bytes(""));
   }
 
   /// @notice Supply data required by a V4 pool hook while keeping the locked
-  /// position, action and payout recipient fixed by this locker.
+  /// position and action fixed by this locker. The default recipient is the
+  /// owner; the owner can also choose one with collectFeesToWithHookData.
   function collectFeesWithHookData(bytes calldata hookData_) external onlyOwner nonReentrant returns (uint256 amount0, uint256 amount1) {
-    if (_kind != ITitanLockerManagerV2.LockKind.UNIV4) revert WrongLockKind();
-    return _collectFees(hookData_);
+    if (_kind != ITitanLockerManagerV2.LockKind.UNIV4 && _kind != ITitanLockerManagerV2.LockKind.INFINITY_CL) revert WrongLockKind();
+    return _collectFees(_owner(), hookData_);
   }
 
-  function _collectFees(bytes memory hookData_) private returns (uint256 amount0, uint256 amount1) {
-    address recipient = _owner();
+  function collectFeesToWithHookData(address recipient_, bytes calldata hookData_) external onlyOwner nonReentrant returns (uint256 amount0, uint256 amount1) {
+    if (recipient_ == address(0)) revert ZeroAddress();
+    if (_kind != ITitanLockerManagerV2.LockKind.UNIV4 && _kind != ITitanLockerManagerV2.LockKind.INFINITY_CL) revert WrongLockKind();
+    return _collectFees(recipient_, hookData_);
+  }
+
+  function _collectFees(address recipient, bytes memory hookData_) private returns (uint256 amount0, uint256 amount1) {
 
     if (_kind == ITitanLockerManagerV2.LockKind.UNIV3) {
       (amount0, amount1) = INonfungiblePositionManagerV3(_asset).collect(
@@ -262,24 +286,40 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
         })
       );
     } else {
-      // UNIV4: decrease liquidity by zero (realises fees) then take both
-      // currencies straight to the owner. modifyLiquidities doesn't return the
+      // V4-style: decrease liquidity by zero (realises fees) then take both
+      // currencies straight to the chosen recipient. modifyLiquidities doesn't return the
       // amounts taken, so capture them as the recipient's balance delta -
       // native ETH (currency == address(0)) and ERC20s read differently.
-      (PoolKeyV4 memory key, ) = IPositionManagerV4(_asset).getPoolAndPositionInfo(_tokenId);
+      address currency0;
+      address currency1;
+      if (_kind == ITitanLockerManagerV2.LockKind.INFINITY_CL) {
+        PoolKeyInfinity memory key;
+        (key, ) = IInfinityCLPositionManager(_asset).getPoolAndPositionInfo(_tokenId);
+        currency0 = key.currency0;
+        currency1 = key.currency1;
+      } else {
+        PoolKeyV4 memory key;
+        (key, ) = IPositionManagerV4(_asset).getPoolAndPositionInfo(_tokenId);
+        currency0 = key.currency0;
+        currency1 = key.currency1;
+      }
 
-      uint256 balance0Before = _currencyBalance(key.currency0, recipient);
-      uint256 balance1Before = _currencyBalance(key.currency1, recipient);
+      uint256 balance0Before = _currencyBalance(currency0, recipient);
+      uint256 balance1Before = _currencyBalance(currency1, recipient);
 
       bytes memory actions = abi.encodePacked(ActionsV4.DECREASE_LIQUIDITY, ActionsV4.TAKE_PAIR);
       bytes[] memory params = new bytes[](2);
       params[0] = abi.encode(_tokenId, uint256(0), uint128(0), uint128(0), hookData_);
-      params[1] = abi.encode(key.currency0, key.currency1, recipient);
+      params[1] = abi.encode(currency0, currency1, recipient);
 
-      IPositionManagerV4(_asset).modifyLiquidities(abi.encode(actions, params), block.timestamp);
+      if (_kind == ITitanLockerManagerV2.LockKind.INFINITY_CL) {
+        IInfinityCLPositionManager(_asset).modifyLiquidities(abi.encode(actions, params), block.timestamp);
+      } else {
+        IPositionManagerV4(_asset).modifyLiquidities(abi.encode(actions, params), block.timestamp);
+      }
 
-      amount0 = _currencyBalance(key.currency0, recipient) - balance0Before;
-      amount1 = _currencyBalance(key.currency1, recipient) - balance1Before;
+      amount0 = _currencyBalance(currency0, recipient) - balance0Before;
+      amount1 = _currencyBalance(currency1, recipient) - balance1Before;
     }
 
     emit FeesCollected(amount0, amount1);
@@ -299,7 +339,7 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   function _vestedAt(uint40 timestamp_) private view returns (uint256) {
     if (timestamp_ < _vestCliff) return 0;
     if (timestamp_ >= _vestEnd) return _vestTotal;
-    return (_vestTotal * (timestamp_ - _vestStart)) / (_vestEnd - _vestStart);
+    return Math.mulDiv(_vestTotal, timestamp_ - _vestStart, _vestEnd - _vestStart);
   }
 
   /// @notice Total granted amount that has vested as of now.
@@ -351,14 +391,26 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   /// @dev Return the locked asset to the owner once the lock has matured.
   /// Vesting locks release via `release()` instead, so they are rejected here.
   function withdraw() external onlyOwner nonReentrant {
+    _withdraw(_owner());
+  }
+
+  /// @notice Return a matured lock's asset to an owner-chosen recipient. This
+  /// also lets a contract owner recover a position NFT when it cannot receive
+  /// ERC721 tokens itself.
+  function withdrawTo(address recipient_) external onlyOwner nonReentrant {
+    if (recipient_ == address(0)) revert ZeroAddress();
+    _withdraw(recipient_);
+  }
+
+  function _withdraw(address recipient_) private {
     if (_kind == ITitanLockerManagerV2.LockKind.ERC20_VESTING) revert WrongLockKind();
     if (uint40(block.timestamp) < _unlockTime) revert LockStillActive(_unlockTime);
 
     if (_kind == ITitanLockerManagerV2.LockKind.ERC20) {
-      IERC20(_asset).safeTransfer(_owner(), _heldBalance());
+      IERC20(_asset).safeTransfer(recipient_, _heldBalance());
       emit TokensWithdrawn();
     } else {
-      IERC721(_asset).safeTransferFrom(address(this), _owner(), _tokenId);
+      IERC721(_asset).safeTransferFrom(address(this), recipient_, _tokenId);
       emit PositionWithdrawn(_tokenId);
     }
   }

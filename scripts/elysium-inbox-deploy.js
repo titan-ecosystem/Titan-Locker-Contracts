@@ -23,6 +23,8 @@ const managerAbi = [
   'function creationEnabled() view returns (bool)',
   'function setCreationEnabled(bool)',
   'function setEthFee(uint256)',
+  'function positionManagerKind(address) view returns (uint8,bool)',
+  'function setPositionManager(address,uint8,bool)',
 ];
 
 function ensure(value, message) { if (!value) throw new Error(message); }
@@ -161,29 +163,37 @@ async function main() {
   ensure(eq(await deployed.feeReceiver(), manifest.feeReceiver), 'deployed fee receiver differs');
   ensure(Number(await deployed.tokenFeeBps()) === manifest.tokenFeeBps, 'token fee differs');
 
-  if ((await deployed.ethFee()).eq(manifest.nativeFeeWei) && await deployed.creationEnabled()) {
-    console.log(`Elysium manager already configured: ${manifest.deployedManager}`);
-    execFileSync('node', [path.join(__dirname, 'elysium-mainnet-preflight.js'), 'postdeploy'], {
-      cwd: root, stdio: 'inherit', env: process.env,
-    });
-    return;
-  }
+  if (!(await deployed.ethFee()).eq(manifest.nativeFeeWei) || !(await deployed.creationEnabled())) {
+    if (!state.disableConfirmed && await deployed.creationEnabled()) {
+      await sendChildTx('disableTx', deployed.interface.encodeFunctionData('setCreationEnabled', [false]), manifest.deployedManager, context);
+    }
+    ensure(!(await deployed.creationEnabled()), 'creation did not disable');
+    state.disableConfirmed = true;
+    writeState(state);
 
-  if (!state.disableConfirmed && await deployed.creationEnabled()) {
-    await sendChildTx('disableTx', deployed.interface.encodeFunctionData('setCreationEnabled', [false]), manifest.deployedManager, context);
-  }
-  ensure(!(await deployed.creationEnabled()), 'creation did not disable');
-  state.disableConfirmed = true;
-  writeState(state);
-
-  if (!(await deployed.ethFee()).eq(manifest.nativeFeeWei)) {
-    await sendChildTx('fee', deployed.interface.encodeFunctionData('setEthFee', [manifest.nativeFeeWei]), manifest.deployedManager, context);
-  }
-  ensure((await deployed.ethFee()).eq(manifest.nativeFeeWei), 'native fee did not update');
-  if (!(await deployed.creationEnabled())) {
-    await sendChildTx('enabled', deployed.interface.encodeFunctionData('setCreationEnabled', [true]), manifest.deployedManager, context);
+    if (!(await deployed.ethFee()).eq(manifest.nativeFeeWei)) {
+      await sendChildTx('fee', deployed.interface.encodeFunctionData('setEthFee', [manifest.nativeFeeWei]), manifest.deployedManager, context);
+    }
+    ensure((await deployed.ethFee()).eq(manifest.nativeFeeWei), 'native fee did not update');
+    if (!(await deployed.creationEnabled())) {
+      await sendChildTx('enabled', deployed.interface.encodeFunctionData('setCreationEnabled', [true]), manifest.deployedManager, context);
+    }
   }
   ensure(await deployed.creationEnabled(), 'creation did not enable');
+
+  for (const [index, pm] of manifest.positionManagers.entries()) {
+    const expectedKind = pm.kind === 'V3' ? 1 : 2;
+    const [kind, allowed] = await deployed.positionManagerKind(pm.address);
+    ensure(!allowed || Number(kind) === expectedKind, `${pm.address} already has an unexpected allowlist kind`);
+    if (!allowed) {
+      await sendChildTx(`positionManager${index}`,
+        deployed.interface.encodeFunctionData('setPositionManager', [pm.address, expectedKind, true]),
+        manifest.deployedManager, context);
+    }
+    const [liveKind, liveAllowed] = await deployed.positionManagerKind(pm.address);
+    ensure(liveAllowed && Number(liveKind) === expectedKind, `${pm.address} allowlist verification failed`);
+    console.log(`Elysium ${pm.kind} position manager configured: ${pm.address}`);
+  }
   console.log(`Elysium manager configured: ${manifest.deployedManager}`);
   execFileSync('node', [path.join(__dirname, 'elysium-mainnet-preflight.js'), 'postdeploy'], {
     cwd: root, stdio: 'inherit', env: process.env,

@@ -68,9 +68,16 @@ async function main() {
   check(Array.isArray(manifest.positionManagers), "positionManagers must be an array");
   const positionManagers = manifest.positionManagers.map((entry, i) => {
     check(entry && (entry.kind === "V3" || entry.kind === "V4"), `positionManagers[${i}] needs V3 or V4 kind`);
-    check(typeof entry.officialSource === "string" && /^https:\/\/developers\.uniswap\.org\//.test(entry.officialSource),
-      `positionManagers[${i}] needs a Uniswap deployment source`);
-    return { address: address(entry.address, `positionManagers[${i}].address`), kind: entry.kind };
+    check(/^0x[\da-fA-F]{64}$/.test(entry.expectedCodeHash || ""),
+      `positionManagers[${i}] needs a pinned runtime hash`);
+    check(typeof entry.expectedSymbol === "string" && entry.expectedSymbol.length > 0,
+      `positionManagers[${i}] needs an NFT symbol`);
+    const linked = entry.kind === "V3" ? entry.expectedFactory : entry.expectedPoolManager;
+    return {
+      address: address(entry.address, `positionManagers[${i}].address`), kind: entry.kind,
+      expectedCodeHash: entry.expectedCodeHash.toLowerCase(), expectedSymbol: entry.expectedSymbol,
+      linked: address(linked, `positionManagers[${i}].linked`),
+    };
   });
   check(new Set(positionManagers.map((p) => p.address)).size === positionManagers.length,
     "duplicate position manager");
@@ -101,7 +108,21 @@ async function main() {
   const block = await provider.getBlockNumber();
   check(block > 0, "RPC has no blocks");
   for (const pm of positionManagers) {
-    check(await provider.getCode(pm.address) !== "0x", `${pm.kind} manager ${pm.address} has no code`);
+    const code = await provider.getCode(pm.address);
+    check(code !== "0x", `${pm.kind} manager ${pm.address} has no code`);
+    check(ethers.utils.keccak256(code).toLowerCase() === pm.expectedCodeHash,
+      `${pm.kind} manager ${pm.address} runtime changed`);
+    const nft = new ethers.Contract(pm.address, [
+      "function symbol() view returns (string)",
+      "function supportsInterface(bytes4) view returns (bool)",
+      "function factory() view returns (address)",
+      "function poolManager() view returns (address)"
+    ], provider);
+    check(await nft.supportsInterface("0x80ac58cd"), `${pm.kind} manager ${pm.address} is not ERC721`);
+    check((await nft.symbol()) === pm.expectedSymbol, `${pm.kind} manager ${pm.address} symbol changed`);
+    const linked = pm.kind === "V3" ? await nft.factory() : await nft.poolManager();
+    check(linked.toLowerCase() === pm.linked.toLowerCase(), `${pm.kind} manager ${pm.address} linked contract changed`);
+    check(await provider.getCode(pm.linked) !== "0x", `${pm.kind} linked contract ${pm.linked} has no code`);
   }
 
   const managerArtifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
@@ -155,7 +176,7 @@ async function main() {
     }
     for (const pm of positionManagers) {
       const [kind, allowed] = await manager.positionManagerKind(pm.address);
-      check(allowed && kind === (pm.kind === "V3" ? 1 : 2), `position manager configuration differs: ${pm.address}`);
+      check(allowed && Number(kind) === (pm.kind === "V3" ? 1 : 2), `position manager configuration differs: ${pm.address}`);
     }
     console.log(`POSTDEPLOY CHECK PASSED on chain ${chainId}, block ${block}; manager ${deployed}`);
     console.log("Child runtime and end-to-end production transactions still need separate verification.");

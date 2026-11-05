@@ -11,7 +11,22 @@
   "nativeFeeWei": "1000000000000000000",
   "tokenFeeBps": 500,
   "feeExemptAccounts": [],
-  "positionManagers": [],
+  "positionManagers": [
+    {
+      "address": "0xF025e0Fe9E331A0eF05c2ad3C4E9C64b625cda6f",
+      "kind": "V3",
+      "expectedCodeHash": "0xce189e6b6a08a1b407258c6103399f53ebcaad24e4975d4206e7cac8300e1f0c",
+      "expectedFactory": "0x1707327F626496A7b5b3872e7E4d2879Df7d7a9f",
+      "expectedSymbol": "UNI-V3-POS"
+    },
+    {
+      "address": "0x1d1C51b9d07fD27d36412A2b66CC23D19Eb3E518",
+      "kind": "V4",
+      "expectedCodeHash": "0xad189c3ce2621a5f4953f3f3c08bc25f6bfb514b5b8b2ec427d23902342c94e7",
+      "expectedPoolManager": "0xE2e105d3F7209A9DA11f83cCf3E7398a753823F1",
+      "expectedSymbol": "UNI-V4-POSM"
+    }
+  ],
   "deployedUtil": "0x772279251b563028a32cD1505e3F2f8485C746D9",
   "deployedManager": "0x713E56CeE7060F01F710bF26Aff988264dcfb311"
 }

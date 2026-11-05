@@ -27,6 +27,7 @@ fail_on_revert = false
 
 [profile.elysium]
 test = "test/fork"
+evm_version = "cancun"
 
 # Separate profile used only for Halmos symbolic tests (test/halmos/**), kept
 # out of profile.default so `forge test`/`forge coverage` etc. never touch it

@@ -1,12 +1,17 @@
 {
   "network": "Kinetiq Elysium mainnet",
-  "officialNetworkSource": "https://elysium.kinetiq.xyz/docs/connecting-to-elysium",
-  "officialChainId": null,
-  "owner": null,
-  "feeReceiver": null,
-  "nativeFeeWei": null,
-  "tokenFeeBps": null,
+  "chainId": 99901,
+  "parentChainId": 999,
+  "rollup": "0x508C173dFe5F737B3493195Bf785d71fA76fD217",
+  "bridge": "0x503D572157113fAaaD4DbeD2647Bb10b949216B6",
+  "inbox": "0xce59f8B65ad41C9DAE4c07A0571a39824bD92cff",
+  "sequencerInbox": "0x7f3Ff53aecB87261206ad3bDc27A88b6D8420fa6",
+  "owner": "0x5C773302FBEED11fA59a6939f0354678738B02DB",
+  "feeReceiver": "0x5C773302FBEED11fA59a6939f0354678738B02DB",
+  "nativeFeeWei": "1000000000000000000",
+  "tokenFeeBps": 500,
   "feeExemptAccounts": [],
   "positionManagers": [],
+  "deployedUtil": null,
   "deployedManager": null
 }

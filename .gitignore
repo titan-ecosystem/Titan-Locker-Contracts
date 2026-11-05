@@ -24,6 +24,8 @@ mnemonic.txt
 .env
 .env.*
 !.env.example
+# Pending parent/child transaction hashes for resumable Inbox deployments.
+.elysium-inbox-state.json
 
 # private key / wallet material - defense in depth beyond mnemonic.txt above
 *.pem

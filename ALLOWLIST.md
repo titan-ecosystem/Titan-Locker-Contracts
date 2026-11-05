@@ -73,6 +73,14 @@ cast send "$V2" "setPositionManager(address,uint8,bool)" <POSITION_MANAGER> <KIN
   --rpc-url "$RPC" --private-key "$DEPLOYER_PRIVATE_KEY"
 ```
 
+### Kinetiq Elysium — chain id `99901`
+
+The regular manager at `0x713E56CeE7060F01F710bF26Aff988264dcfb311`
+has no LP position manager allowlisted. The official rollup, Inbox, Bridge, and
+token-gateway addresses are infrastructure contracts, not V3/V4 position NFT
+managers. ERC-20 locking and vesting can use the deployed manager; LP position
+locking requires a separately verified position manager.
+
 ---
 
 ## Request an addition (open a PR)

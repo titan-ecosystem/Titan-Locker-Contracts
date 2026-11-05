@@ -50,10 +50,15 @@ contract TitanLockerManagerV2FuzzTest is Test {
 
     manager.setTokenFeeBps(bps);
     token.approve(address(manager), amount);
+    uint256 expectedFee = (amount * bps + BPS_DENOMINATOR - 1) / BPS_DENOMINATOR;
+    if (amount == expectedFee) {
+      vm.expectRevert(TitanLockerManagerV2.ZeroAmount.selector);
+      manager.createTokenLock(address(token), amount, unlockTime, bps);
+      return;
+    }
     manager.createTokenLock(address(token), amount, unlockTime, bps);
 
     uint256 amountToLock = token.balanceOf(address(_latestLocker()));
-    uint256 expectedFee = (amount * bps + BPS_DENOMINATOR - 1) / BPS_DENOMINATOR;
     assertLe(amountToLock, amount, "must never lock more than deposited");
     assertEq(amountToLock, amount - expectedFee, "amountToLock == amount - fee");
     assertEq(token.balanceOf(feeReceiver), expectedFee, "feeReceiver gets the fee");

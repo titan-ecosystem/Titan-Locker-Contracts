@@ -121,6 +121,7 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
 
     uint40 id = _tokenLockerCount++;
     uint256 amountToLock = _collectFee(id, tokenAddress_, amount_, maxTokenFeeBps_);
+    if (amountToLock == 0) revert ZeroAmount();
 
     TitanLockerV2 locker = new TitanLockerV2(
       address(this), id, _msgSender(), LockKind.ERC20, tokenAddress_, 0, unlockTime_, 0, 0, 0, 0
@@ -207,6 +208,7 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
 
     uint40 id = _tokenLockerCount++;
     uint256 amountToLock = _collectFee(id, tokenAddress_, amount_, maxTokenFeeBps_);
+    if (amountToLock == 0) revert ZeroAmount();
 
     // Grant is the nominal post-fee amount; `release()` clamps payouts to the
     // lock's live balance, so fee-on-transfer shortfalls can never over-release.

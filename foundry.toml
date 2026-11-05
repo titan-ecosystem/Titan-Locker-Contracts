@@ -25,6 +25,9 @@ runs = 256
 depth = 100
 fail_on_revert = false
 
+[profile.elysium]
+test = "test/fork"
+
 # Separate profile used only for Halmos symbolic tests (test/halmos/**), kept
 # out of profile.default so `forge test`/`forge coverage` etc. never touch it
 # and the existing test/foundry suite's discovery/behavior is unaffected.

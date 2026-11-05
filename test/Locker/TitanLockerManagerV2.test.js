@@ -74,13 +74,11 @@ describe("TitanLockerManagerV2.sol", () => {
       expect((await manager.getTokenLockData(id)).balance).to.equal(18);
       expect((await erc20.balanceOf(feeReceiver.address)).sub(beforeReceiver)).to.equal(1);
 
-      // 1 unit is small enough that "at least 1 unit of fee" consumes the
-      // entire deposit - the lock is created but holds nothing.
+      // 1 unit would be entirely consumed by the fee, so creation reverts.
       const beforeReceiver2 = await erc20.balanceOf(feeReceiver.address);
-      await manager.createTokenLock(erc20.address, 1, unlockTime, 10000);
-      id = Number(await manager.tokenLockerCount()) - 1;
-      expect((await manager.getTokenLockData(id)).balance).to.equal(0);
-      expect((await erc20.balanceOf(feeReceiver.address)).sub(beforeReceiver2)).to.equal(1);
+      await expect(manager.createTokenLock(erc20.address, 1, unlockTime, 10000)).to.be.reverted;
+      expect(Number(await manager.tokenLockerCount())).to.equal(id + 1);
+      expect((await erc20.balanceOf(feeReceiver.address)).sub(beforeReceiver2)).to.equal(0);
     });
 
     it("Should lock 100% when the flat ETH fee is paid", async () => {
@@ -101,7 +99,7 @@ describe("TitanLockerManagerV2.sol", () => {
       await tokenB.transfer(lpToken.address, 7000);
       await lpToken.approve(manager.address, ethers.constants.MaxUint256);
 
-      await manager.createTokenLock(lpToken.address, 1, await futureUnlock(), 10000);
+      await manager.createTokenLock(lpToken.address, 2, await futureUnlock(), 10000);
       const id = Number(await manager.tokenLockerCount()) - 1;
 
       const idsA = await manager.getTokenLockersForAddress(tokenA.address);

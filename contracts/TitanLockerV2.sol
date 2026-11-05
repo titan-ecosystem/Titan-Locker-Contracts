@@ -239,6 +239,17 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   /// is the whole point of locking an LP position. Touches only this lock's own
   /// immutable `_tokenId`, so it can never reach another lock's fees.
   function collectFees() external onlyOwner onlyPosition nonReentrant returns (uint256 amount0, uint256 amount1) {
+    return _collectFees(bytes(""));
+  }
+
+  /// @notice Supply data required by a V4 pool hook while keeping the locked
+  /// position, action and payout recipient fixed by this locker.
+  function collectFeesWithHookData(bytes calldata hookData_) external onlyOwner nonReentrant returns (uint256 amount0, uint256 amount1) {
+    if (_kind != ITitanLockerManagerV2.LockKind.UNIV4) revert WrongLockKind();
+    return _collectFees(hookData_);
+  }
+
+  function _collectFees(bytes memory hookData_) private returns (uint256 amount0, uint256 amount1) {
     address recipient = _owner();
 
     if (_kind == ITitanLockerManagerV2.LockKind.UNIV3) {
@@ -262,7 +273,7 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
 
       bytes memory actions = abi.encodePacked(ActionsV4.DECREASE_LIQUIDITY, ActionsV4.TAKE_PAIR);
       bytes[] memory params = new bytes[](2);
-      params[0] = abi.encode(_tokenId, uint256(0), uint128(0), uint128(0), bytes(""));
+      params[0] = abi.encode(_tokenId, uint256(0), uint128(0), uint128(0), hookData_);
       params[1] = abi.encode(key.currency0, key.currency1, recipient);
 
       IPositionManagerV4(_asset).modifyLiquidities(abi.encode(actions, params), block.timestamp);
@@ -323,6 +334,18 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
     emit TokensReleased(amount);
   }
 
+  /// @notice Recover tokens beyond the unpaid grant after vesting ends.
+  /// The unpaid amount remains in the locker for `release()`.
+  function withdrawVestingSurplus() external onlyOwner onlyVesting nonReentrant returns (uint256 surplus) {
+    if (uint40(block.timestamp) < _vestEnd) revert LockStillActive(_vestEnd);
+    uint256 unpaid = _vestTotal - _released;
+    uint256 held = _heldBalance();
+    if (held <= unpaid) return 0;
+    surplus = held - unpaid;
+    IERC20(_asset).safeTransfer(_owner(), surplus);
+    if (_heldBalance() < unpaid) revert CannotSweepLockedToken();
+  }
+
   // --- withdrawal (after unlock) ---
 
   /// @dev Return the locked asset to the owner once the lock has matured.
@@ -352,13 +375,15 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
     stray.safeTransfer(_owner(), stray.balanceOf(address(this)));
   }
 
-  /// @dev Rescue an ERC721 that landed on this contract by mistake. The locked
-  /// position NFT itself can never be moved this way - it is only releasable via
-  /// `withdraw()` after `unlockTime` - so this only ever frees genuinely stray
-  /// NFTs (the contract accepts any NFT via ERC721Holder, so without this they
-  /// would be stuck forever).
+  /// @dev Rescue an ERC721 that landed on this contract by mistake. A locked
+  /// position's token ID is never recoverable here. For fungible locks, an NFT
+  /// from the locked token's own collection is recoverable only after maturity:
+  /// some dual-interface tokens link NFT ownership to the locked ERC20 balance.
   function withdrawNft(address collection_, uint256 tokenId_) external onlyOwner nonReentrant {
-    if (_kind != ITitanLockerManagerV2.LockKind.ERC20 && collection_ == _asset && tokenId_ == _tokenId) {
+    if (collection_ == _asset && (
+      (_isFungible() && uint40(block.timestamp) < _unlockTime) ||
+      (!_isFungible() && tokenId_ == _tokenId)
+    )) {
       revert CannotSweepLockedToken();
     }
     IERC721(collection_).safeTransferFrom(address(this), _owner(), tokenId_);

@@ -1,0 +1,12 @@
+{
+  "network": "Kinetiq Elysium mainnet",
+  "officialNetworkSource": "https://elysium.kinetiq.xyz/docs/connecting-to-elysium",
+  "officialChainId": null,
+  "owner": null,
+  "feeReceiver": null,
+  "nativeFeeWei": null,
+  "tokenFeeBps": null,
+  "feeExemptAccounts": [],
+  "positionManagers": [],
+  "deployedManager": null
+}

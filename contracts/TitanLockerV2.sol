@@ -15,6 +15,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import { ITitanLockerManagerV2 } from "./ITitanLockerManagerV2.sol";
 import { INonfungiblePositionManagerV3 } from "./interfaces/INonfungiblePositionManagerV3.sol";
@@ -338,7 +339,7 @@ contract TitanLockerV2 is Ownable, ERC721Holder, ReentrancyGuard {
   function _vestedAt(uint40 timestamp_) private view returns (uint256) {
     if (timestamp_ < _vestCliff) return 0;
     if (timestamp_ >= _vestEnd) return _vestTotal;
-    return (_vestTotal * (timestamp_ - _vestStart)) / (_vestEnd - _vestStart);
+    return Math.mulDiv(_vestTotal, timestamp_ - _vestStart, _vestEnd - _vestStart);
   }
 
   /// @notice Total granted amount that has vested as of now.

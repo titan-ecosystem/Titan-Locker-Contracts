@@ -48,10 +48,17 @@ numbers. V2/V2.1 deployed contracts do not gain this feature.
 - Owner-index handovers no longer scan attacker-grown address buckets. The
   bounded-gas regression fails on the previous implementation and passes with
   the fix. Existing V2.1 child lockers still use their original manager.
+- The renewed review found an extreme-supply arithmetic bug: multiplying a
+  very large deposit by the token-fee rate could revert lock creation, and
+  multiplying a very large vesting grant by elapsed time could block claims
+  before the schedule ended. Both calculations now use full-precision
+  `Math.mulDiv`; tests with grants near half of `uint256.max` pass. This was a
+  conditional availability issue, not an early unlock or principal drain.
 
 ## Verification performed
 
-- 69 Foundry tests including fuzz/invariants and fee reproductions: pass.
+- 71 Foundry tests including fuzz/invariants, fee reproductions, and
+  extreme-supply arithmetic checks: pass.
 - 93 Hardhat local end-to-end tests: pass.
 - Six Robinhood fork tests with real Sushi V3, Pancake V3, Sushi V4 CL, and
   Pancake Infinity CL NFTs: pass using Cancun EVM. Each verifies NFT custody,
@@ -70,9 +77,9 @@ numbers. V2/V2.1 deployed contracts do not gain this feature.
   `solidity-coverage > sc-istanbul > handlebars` test-coverage path, not
   deployed contract bytecode. The other advisories still need toolchain
   triage before using the release scripts with a funded private key.
-- Compiled runtime sizes: manager 22,898 bytes; child locker 12,500 bytes,
+- Compiled runtime sizes: manager 23,404 bytes; child locker 12,681 bytes,
   both below the EIP-170 24,576-byte limit. JavaScript release scripts pass
-  syntax checks. A local Anvil Robinhood fork rehearsal deployed Util and V2.2,
+  syntax checks. A repeatable local Anvil Robinhood fork rehearsal deployed Util and the final V2.2 bytecode,
   configured the approved 0.025 ETH / 3% fees and all six managers, and checked
   an ERC-20 lock's custody, early-exit rejection, and matured withdrawal. The
   manager's local runtime bytecode exactly matched the compiled artifact after
@@ -101,9 +108,15 @@ with executing it on a Cancun chain.
    production deployer key; the critical Handlebars path is test-only, while
    other high-severity advisories touch packages used by release tooling.
 3. Confirm the product UI and docs accept kind 4 and display the four new
-   position managers correctly. The contracts alone do not change the UI.
+   position managers correctly. The current public [locker page](https://titanlocker.com/locker)
+   and [contract directory](https://titanlocker.com/docs/contracts) still
+   describe only Uniswap V3/V4 and the V2.1 manager; the contracts alone do
+   not change the UI. Do not advertise Sushi/Pancake support until this is
+   updated and exercised end to end.
 4. Decide how to handle live legacy managers. Robinhood V1 creation remains
    enabled and permits a 100% owner-set token fee without a caller cap.
+   The public contract directory calls V1 read-only, which does not match the
+   last read-only on-chain `creationEnabled()` check.
    Existing V2.1 contract-owned NFT locks remain subject to the conditional
    handover-index gas grief reported in
    [the addendum](./SECURITY_ADDENDUM_2026-11-05.md). Neither contract is

@@ -15,6 +15,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ITitanLockerManagerV2 } from "./ITitanLockerManagerV2.sol";
 import { Ownable } from "./Ownable.sol";
 import { TitanLockerV2 } from "./TitanLockerV2.sol";
@@ -184,7 +185,7 @@ contract TitanLockerManagerV2 is ITitanLockerManagerV2, Ownable, ReentrancyGuard
     // Round the fee up (ceiling division) instead of down, so any nonzero
     // amount_ at a nonzero fee rate always pays at least 1 unit - dust
     // amounts can no longer round down to a free lock.
-    uint256 tokenFeeAmount = (amount_ * _tokenFeeBps + BPS_DENOMINATOR - 1) / BPS_DENOMINATOR;
+    uint256 tokenFeeAmount = Math.mulDiv(amount_, _tokenFeeBps, BPS_DENOMINATOR, Math.Rounding.Ceil);
     amountToLock = amount_ - tokenFeeAmount;
 
     if (tokenFeeAmount != 0) {

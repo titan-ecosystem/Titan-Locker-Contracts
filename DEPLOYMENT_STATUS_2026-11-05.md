@@ -37,15 +37,15 @@ The `Util` creation transaction was posted to the official Inbox
   `0x05f8b90cebf86a39abd9073c225699dca63c955fb41ae34b8ab1784a845a5def`
 
 The script stopped after 20 minutes without a child receipt. It did **not** post
-the manager deployment or fee/configuration transactions. The confirmed Inbox
-message has delayed-message index 610,575, while the SequencerInbox reported
-only 561,989 delayed messages read, unchanged across more than 16,000 parent
-blocks during the check. The Elysium child RPC was producing current blocks but
-did not show the signed creation transaction. The operator needs to restore or
-confirm Inbox watcher and delayed-message processing before this deployment
-can resume. The local `.elysium-inbox-state.json` (mode 0600, gitignored) retains
-both hashes and nonce for safe resumption with
-`node scripts/elysium-inbox-deploy.js execute`.
+the manager deployment or fee/configuration transactions. The Inbox message has
+delayed-message index 610,575. The SequencerInbox initially lagged but later
+advanced past this index, while the Elysium wallet nonce remained zero and no
+library code appeared. Inspection found that our deployment script sent bare
+signed transaction bytes beginning with `0x02`. Nitro requires a `0x04`
+signed-message type byte before those bytes. The message was therefore consumed
+without executing the transaction. The deployment script now uses the required
+prefix. The local `.elysium-inbox-state.json` (mode 0600, gitignored) retains the
+failed parent and child hashes for reconciliation before a corrected retry.
 
 Elysium's approved LP position-manager list remains empty. The supplied official
 addresses identify the rollup, Inbox, Bridge, and token gateways; none is a V3

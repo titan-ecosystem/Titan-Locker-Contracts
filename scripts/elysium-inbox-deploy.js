@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { ethers } = require('ethers');
+const { encodeSignedL2Message } = require('./elysium-inbox-message');
 
 const root = path.resolve(__dirname, '..');
 require('dotenv').config({ path: path.join(root, '.env') });
@@ -89,7 +90,7 @@ async function sendChildTx(label, data, to, context) {
     gasLimit, maxFeePerGas: feeCap, maxPriorityFeePerGas: 0,
   });
   const childHash = ethers.utils.keccak256(raw);
-  const calldata = inbox.interface.encodeFunctionData('sendL2Message', [raw]);
+  const calldata = inbox.interface.encodeFunctionData('sendL2Message', [encodeSignedL2Message(raw)]);
   state[label] = { l2Hash: childHash, nonce, l1Hash: null };
   writeState(state);
   const parentTx = await parentWallet.sendTransaction({

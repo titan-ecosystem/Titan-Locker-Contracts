@@ -96,6 +96,7 @@ There are two independent generations, deployed side by side (the frontend reads
 | `TitanLockerManagerV1` | [`0x713E56CeE7060F01F710bF26Aff988264dcfb311`](https://robinhoodchain.blockscout.com/address/0x713E56CeE7060F01F710bF26Aff988264dcfb311) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x713E56CeE7060F01F710bF26Aff988264dcfb311?tab=contract) |
 | `TitanLockerManagerV2` | [`0x26b0654a0756dcd036d4e7215324f3d2be34d79e`](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x26b0654a0756dcd036d4e7215324f3d2be34d79e?tab=contract) (bytecode == artifact, 19,299 bytes) |
 | `TitanLockerManagerV2_1` | [`0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B`](https://robinhoodchain.blockscout.com/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B) | ✅ [source](https://robinhoodchain.blockscout.com/address/0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B?tab=contract) (bytecode == artifact, 19,869 bytes) |
+| `TitanLockerManagerV2_2` | [`0x5fa3f3Ca0c497b22ccd360aAe8423738D1825Fe9`](https://robinhoodchain.blockscout.com/address/0x5fa3f3Ca0c497b22ccd360aAe8423738D1825Fe9) | Runtime matches the linked release artifact byte for byte; explorer source verification pending |
 | `TitanLockerV2` (per-lock child) | verified template — e.g. [`0x0A1C…cd61`](https://robinhoodchain.blockscout.com/address/0x0A1CB1708c019A7C15285543e31996541024cd61?tab=contract) (token lock), [`0x2908…0ca1`](https://robinhoodchain.blockscout.com/address/0x2908D040c8f11d3F87f8E3FF2EAdC6e04a320ca1?tab=contract) (vesting lock) | ✅ verified source |
 
 Verified source reflects the code as it was at deploy time (predates the
@@ -105,9 +106,10 @@ Comment-only differences don't affect logic, but do change the embedded
 metadata hash, so re-verifying with a newer source snapshot isn't possible
 without redeploying.
 
-Owner / fee receiver: `0x5C773302FBEED11fA59a6939f0354678738B02DB`. Current fee schedule
-on the V2/V2.1 managers (where all new locks are created): 0.025 ETH flat, or 3% of the
-deposited token if paid in-kind (both owner-adjustable). The legacy V1 manager still
+Owner / fee receiver: `0x5C773302FBEED11fA59a6939f0354678738B02DB`. The V2.2 manager is
+enabled for new locks with a 0.025 ETH flat fee or 3% of the deposited token
+if paid in-kind (both owner-adjustable). The Titan app must point to this new
+address before its users can create V2.2 locks. The legacy V1 manager still
 carries its original 0.05 ETH setting.
 
 Manually verified end-to-end on this live deployment (both fee paths, both
@@ -147,12 +149,12 @@ additions (open a PR) are documented in **[ALLOWLIST.md](./ALLOWLIST.md)**. On
 Robinhood Chain (4663) the canonical managers are Uniswap v3
 `NonfungiblePositionManager` [`0x73991a25…DE0D3`](https://robinhoodchain.blockscout.com/address/0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3)
 and v4 `PositionManager` [`0x58daec31…04fa7`](https://robinhoodchain.blockscout.com/address/0x58daec3116aae6d93017baaea7749052e8a04fa7).
-The proposed V2.2 release also supports SushiSwap V3, PancakeSwap V3,
+The live V2.2 manager also supports SushiSwap V3, PancakeSwap V3,
 SushiSwap V4 CL, and PancakeSwap Infinity CL. The two CL managers use the
 `INFINITY_CL` kind (4), not Uniswap's `UNIV4` kind (2): their pool-key return
 format is different. All four additions passed local Robinhood fork tests for
-NFT custody, fee claiming, and maturity withdrawal. They are not yet deployed
-or allowlisted on the new manager; see [ALLOWLIST.md](./ALLOWLIST.md).
+NFT custody, fee claiming, and maturity withdrawal. All four are now
+allowlisted on the new manager; see [ALLOWLIST.md](./ALLOWLIST.md).
 
 **Stable Chain** (chain ID `988`) — **retired 9 October 2026**
 
@@ -297,8 +299,8 @@ Yes — `TitanLockerManagerV2` is live on **Robinhood Chain (chain ID 4663)** at
 **Has Titan Locker been audited?**
 Yes — [ContractWolf](https://contractwolf.io) ran a Standard Audit against `TitanLockerManagerV2`/`TitanLockerV2`; all 4 findings were closed and shipped as version 2.1.0. Full report: [ContractWolf_Audit_TitanLockerV2.pdf](./ContractWolf_Audit_TitanLockerV2.pdf). See [ContractWolf audit](#contractwolf-audit) for what was found and how each was fixed.
 
-**Should I use `TitanLockerManagerV2` or `TitanLockerManagerV2_1`?**
-Use **V2.1** (`0x102a70bDA2C833b3483A2eE55C14c7ea0fb7A01B`) for new locks — it carries the ContractWolf audit fixes. The original V2 deployment is untouched; existing locks on it remain fully safe (none of the findings involve custody of an already-created lock), and it's kept live only so those existing locks keep working normally.
+**Which Robinhood manager should create new locks?**
+Use **V2.2** (`0x5fa3f3Ca0c497b22ccd360aAe8423738D1825Fe9`) for new locks. It carries the ContractWolf audit fixes and the later custody hardening. Existing locks on older immutable managers remain at their original addresses; the Titan app needs a separate address update to route new locks to V2.2.
 
 **Is Titan Locker upgradeable?**
 No. The contracts are **immutable / non-upgradeable** — plain constructors, no proxy, no `delegatecall`, no admin upgrade path. New versions are separate deployments; existing locks are never affected.

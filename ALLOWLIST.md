@@ -43,18 +43,19 @@ Manager: `TitanLockerManagerV2` at
 | Uniswap **v3** | `UNIV3` | [`0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3`](https://robinhoodchain.blockscout.com/address/0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3) | `symbol() == "UNI-V3-POS"`, 47k+ positions minted (canonical; the look-alike clones have 0–2) | ✅ allowlisted ([tx](https://robinhoodchain.blockscout.com/tx/0xf6d51162aab0236332d2c517ce03d6414a7bed3085355696cff5a8db3afd5b69)) |
 | Uniswap **v4** | `UNIV4` | [`0x58daec3116aae6d93017baaea7749052e8a04fa7`](https://robinhoodchain.blockscout.com/address/0x58daec3116aae6d93017baaea7749052e8a04fa7) | `poolManager() == 0x8366a39CC670B4001A1121B8F6A443A643e40951` (matches Uniswap's published v4 PoolManager) | ✅ allowlisted ([tx](https://robinhoodchain.blockscout.com/tx/0x5a1d65ae1616023f5d647a5058afd7ad604ff6b73eea293d04c402668953f1a0)) |
 
-### Proposed V2.2 Robinhood additions (not yet deployed)
+### Robinhood V2.2 additions
 
 The existing V2/V2.1 managers do not support `INFINITY_CL`. These rows describe
-the proposed V2.2 manager only. The release script is
+the live V2.2 manager at
+[`0x5fa3f3Ca0c497b22ccd360aAe8423738D1825Fe9`](https://robinhoodchain.blockscout.com/address/0x5fa3f3Ca0c497b22ccd360aAe8423738D1825Fe9) only. The release script is
 `scripts/setPositionManagersV2_2.js` and targets its separate deployment record.
 
 | Protocol | Kind | Position manager | Status |
 |---|---|---|---|
-| SushiSwap V3 | `UNIV3` | [`0x51d0e5188afe12d502e29D982d20C190e7816107`](https://robinhoodchain.blockscout.com/address/0x51d0e5188afe12d502e29D982d20C190e7816107) | Fork tested; pending V2.2 deployment |
-| PancakeSwap V3 | `UNIV3` | [`0x46A15B0b27311cedF172AB29E4f4766fbE7F4364`](https://robinhoodchain.blockscout.com/address/0x46A15B0b27311cedF172AB29E4f4766fbE7F4364) | Fork tested; pending V2.2 deployment |
-| SushiSwap V4 CL | `INFINITY_CL` | [`0xd3d35fBc4E44523CA3cD383C1948322Ddb42F644`](https://robinhoodchain.blockscout.com/address/0xd3d35fBc4E44523CA3cD383C1948322Ddb42F644) | Fork tested; pending V2.2 deployment |
-| PancakeSwap Infinity CL | `INFINITY_CL` | [`0xeaEA9253A0b75B936a965DbD35B2a3F01831DE74`](https://robinhoodchain.blockscout.com/address/0xeaEA9253A0b75B936a965DbD35B2a3F01831DE74) | Fork tested; pending V2.2 deployment |
+| SushiSwap V3 | `UNIV3` | [`0x51d0e5188afe12d502e29D982d20C190e7816107`](https://robinhoodchain.blockscout.com/address/0x51d0e5188afe12d502e29D982d20C190e7816107) | Allowlisted on V2.2; fork tested |
+| PancakeSwap V3 | `UNIV3` | [`0x46A15B0b27311cedF172AB29E4f4766fbE7F4364`](https://robinhoodchain.blockscout.com/address/0x46A15B0b27311cedF172AB29E4f4766fbE7F4364) | Allowlisted on V2.2; fork tested |
+| SushiSwap V4 CL | `INFINITY_CL` | [`0xd3d35fBc4E44523CA3cD383C1948322Ddb42F644`](https://robinhoodchain.blockscout.com/address/0xd3d35fBc4E44523CA3cD383C1948322Ddb42F644) | Allowlisted on V2.2; fork tested |
+| PancakeSwap Infinity CL | `INFINITY_CL` | [`0xeaEA9253A0b75B936a965DbD35B2a3F01831DE74`](https://robinhoodchain.blockscout.com/address/0xeaEA9253A0b75B936a965DbD35B2a3F01831DE74) | Allowlisted on V2.2; fork tested |
 
 SushiSwap's official [V3 configuration](https://github.com/sushi-labs/sushi/blob/3f6938e2970c3f930b9dfd522a0846258eed0ba8/src/evm/config/features/sushiswap-v3.ts) and [V4 CL deployment manifest](https://github.com/sushi-labs/infinity-deployments/blob/main/chains/robinhood-mainnet.json), and PancakeSwap's official [V3](https://github.com/pancakeswap/pancake-developer/blob/master/docs/pages/contracts/v3/addresses.md) and [Infinity](https://github.com/pancakeswap/pancake-developer/blob/master/docs/pages/contracts/infinity/resources/addresses.mdx) tables identify these position managers.
 
